@@ -105,10 +105,8 @@ PRODUCTS = {
 GLOB_FNAME_PATTERN = {
     "AHI": {
 
-        "L1b": {
-            "HS_{platform_shortname:3s}_{start_time:%Y%m%d_%H%M}_B{band_number:2d}_{sector:4s}_R{spatial_res:2d}_S{segment_number:2d}{segment_total:2d}.DAT",
-            "HS_{platform_shortname:3s}_{start_time:%Y%m%d_%H%M}_B{band_number:2d}_{sector:4s}_R{spatial_res:2d}_S{segment_number:2d}{segment_total:2d}.DAT.bz2"
-            },
+        "L1b": 'HS_{platform_shortname:3s}_{start_time:%Y%m%d_%H%M}_B{band_number:2d}_{sector:4s}_R{spatial_res:2d}_S{segment_number:2d}{segment_total:2d}.{data_format}',
+
         # sector:
         # FLDK -> full disk
         # JP{area_number:2s} Japan Area -> 01-04
@@ -118,11 +116,11 @@ GLOB_FNAME_PATTERN = {
         # --> We can retrieve more specific info if needed 
         #  modifying https://github.com/ghiggi/himawari_api/blob/main/himawari_api/io.py#L920
         "L2": {
-
-             "CMSK": {
-                "Himawari8_AHI_{sector:4s}_{start_time:%Y%j_%H%M_%S}_CLOUD_MASK_EN.nc", # Before 2021
-                "AHI-CMSK_v1r0_h08_s{start_time:%Y%m%d%H%M%S}_e {end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc"
+            "CMSK": { # PRODUCT = [CLOUD_MASK, CMSK]
+                "{platform}_AHI_{sector:4s}_{start_time:%Y%j_%H%M_%S}_{product}_EN.nc", # Before 2021
+                "AHI-{product}_{version}_{platform_shortname:3s}_s{start_time:%Y%m%d%H%M%S}_e{end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc"
                 },
+            # TO ADAPT AS ABOVE ... MAYBE NOT NEEDED... UNIQUE FOR PRODUCTS 
             "CPHS": {
                 "Himawari8_AHI_{sector:4s}_{start_time:%Y%j_%H%M_%S}_CLOUD_PHASE_EN.nc", # Before 2021
                 "AHI-CPHS_v1r0_h08_s{start_time:%Y%m%d%H%M%S}_e {end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc"
@@ -130,6 +128,10 @@ GLOB_FNAME_PATTERN = {
             "CHGT": {
                 "Himawari8_AHI_{sector:4s}_{start_time:%Y%j_%H%M_%S}_CLOUD_HEIGHT_EN.nc", # Before 2021
                 "AHI-CHGT_v1r0_h08_s{start_time:%Y%m%d%H%M%S}_e {end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc"
+                },
+            "RRQPE": { # PRODUCT = [HYDRO_RAIN_RATE, RRQPE]
+                "{platform}_AHI_2KM_{sector:4s}_{start_time:%Y%j_%H%M_%S}_{product}_EN.nc", # Before 2021
+                "{product}-AHI-INST_{version}_{platform_shortname:3s}_{start_time:%Y%m%d%H%M%S}_e{end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc"
                 },
             
             # The following we don't need to implement 
@@ -153,10 +155,6 @@ GLOB_FNAME_PATTERN = {
             #     "NDMW-AHI-C{channel:2d}CS_v1r0_h08_{start_time:%Y%m%d%H%M%S}_e {end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc",
             #     },
             
-            "RRQPE": {
-                "Himawari8_AHI_2KM_{sector:4s}_{start_time:%Y%j_%H%M_%S}_HYDRO_RAIN_RATE_EN.nc", # Before 2021
-                "RRQPE-AHI-INST_v1r1_h08_ {start_time:%Y%m%d%H%M%S}_e {end_time:%Y%m%d%H%M%S}_c{production_time:%Y%m%d%H%M%S}.nc"
-                },
             
             # "SST": {
             #     # Before 2021 named: 

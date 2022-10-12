@@ -21,20 +21,20 @@ import datetime
 import numpy as np
 import pandas as pd
 from trollsift import Parser
-from .utils.time import _dt_to_year_doy_hour
+from himawari_api.utils.time import _dt_to_year_doy_hour
 
 ####--------------------------------------------------------------------------.
 #### Alias
  
 _satellites = {
-    "himawari-8": ["H8", "HIMAWARI-8", "HIMAWARI8"],
-    "himawari-9": ["H9", "HIMAWARI-9", "HIMAWARI9"],
+    "himawari-8": ["H8", "H08", "HIMAWARI-8", "HIMAWARI8"],
+    "himawari-9": ["H9", "H08", "HIMAWARI-9", "HIMAWARI9"],
 }
 
 _sectors = {
     "FLDK": ["FULL", "FULLDISK", "FULL DISK", "F"],
-    "JP": ["JAPAN", "JAPAN_AREA", "JAPAN AREA"],                           # Maybe add the sector's numbers
-    "TA": ["TARGET", "TARGET_AREA", "TARGET AREA"],
+    "Japan": ["JAPAN", "JAPAN_AREA", "JAPAN AREA"],                           # Maybe add the sector's numbers
+    "Target": ["TARGET", "TARGET_AREA", "TARGET AREA"],
 }
 # TODO ? Keep the long channel names if they correspond ?
 # _channels = {
@@ -79,22 +79,22 @@ _sectors = {
 
 # - Channel informations : https://www.data.jma.go.jp/mscweb/en/himawari89/space_segment/spsg_ahi.html
 _channels = {
-    "C01": ["C01", "1", "01", "0.47"],
-    "C02": ["C02", "2", "02", "0.51"],
-    "C03": ["C03", "3", "03", "0.64", "VIS"],                                  # Maybe change to 0.63
-    "C04": ["C04", "4", "04", "0.86"],
-    "C05": ["C05", "5", "05", "1.6"],
-    "C06": ["C06", "6", "06", "2.3"],
-    "C07": ["C07", "7", "07", "3.9", "IR4"],
-    "C08": ["C08", "8", "08", "6.2", "IR3"],
-    "C09": ["C09", "9", "09", "6.9"],
-    "C10": ["C10", "10", "10", "7.3" ],
-    "C11": ["C11", "11", "11", "8.6"],
-    "C12": ["C12", "12", "12", "9.6"],
-    "C13": ["C13", "13", "10.4", "IR1"],
-    "C14": ["C14", "14", "11.2"],
-    "C15": ["C15", "15", "12.4", "IR2"],
-    "C16": ["C16", "16", "13.3"],
+    "B01": ["C01", "1", "01", "0.47"],
+    "B02": ["C02", "2", "02", "0.51"],
+    "B03": ["C03", "3", "03", "0.64", "VIS"],                                  # Maybe change to 0.63
+    "B04": ["C04", "4", "04", "0.86"],
+    "B05": ["C05", "5", "05", "1.6"],
+    "B06": ["C06", "6", "06", "2.3"],
+    "B07": ["C07", "7", "07", "3.9", "IR4"],
+    "B08": ["C08", "8", "08", "6.2", "IR3"],
+    "B09": ["C09", "9", "09", "6.9"],
+    "B10": ["C10", "10", "10", "7.3" ],
+    "B11": ["C11", "11", "11", "8.6"],
+    "B12": ["C12", "12", "12", "9.6"],
+    "B13": ["C13", "13", "10.4", "IR1"],
+    "B14": ["C14", "14", "11.2"],
+    "B15": ["C15", "15", "12.4", "IR2"],
+    "B16": ["C16", "16", "13.3"],
 }
 
 PROTOCOLS = ["s3", "local", "file"]
@@ -822,14 +822,23 @@ def _get_bucket_prefix(protocol):
         )
     return prefix
 
+
+# TODO: if sector not FLDK, check product_level is L1B      
 def _get_product_name(sensor, product_level, product, sector):
     """Get bucket directory name of a product."""
-    
     if sensor == "AHI":
-        # TODO : assertion on sensors ?
-            product_name = f"{sensor}-{product_level}-{product}"
+        if product == "Rad":
+            product_name = f"{sensor}-{product_level}-{sector}"
+        elif product in ["CMSK", "CHGT","CPHS"]:
+            product_name = f"{sensor}-{product_level}-{sector}-Clouds"
+        elif product in ["RRQPE"]:    
+            product_name = f"{sensor}-{product_level}-{sector}-RainfallRate"
+        else: 
+            raise ValueError(f"Retrieval not implemented for {product}.")
+
     else: 
         raise ValueError("Sensor should be specified (AHI)")
+        
     return product_name
         
 def _get_product_dir(
@@ -882,7 +891,7 @@ def _infer_product_level(fpath):
     for prodname in ahi_l2_products:
         if prodname in fname:
             return "L2"
-    # ahi_l1b_products = ["FLDK_R", "JP",  ]                                      # how to detect target area ?
+    # ahi_l1b_products = ["FLDK_R", "JP",  ]     # how to detect target area ?
     if '-L1b-' in fname: 
         return 'L1b'
     else: 
@@ -901,10 +910,12 @@ def _infer_product_level(fpath):
 def _infer_satellite(fpath):
     """Infer satellite from filepath."""
     fname = os.path.basename(fpath)
-    if ('H8' in fname)or("himawari8" in fname): 
-        return 'HIMAWARI-8'
-    elif ('H9' in fname)or("himawari9" in fname): 
-        return 'HIMAWARI-9'
+    # GG SUGGESTION: if [h08, himawari8, himawari-8] in fpath.lower()
+    
+    if ('H8' in fname) or ("himawari8" in fname): 
+        return 'himawari-8'
+    elif ('H9' in fname) or ("himawari9" in fname): 
+        return 'himawari-9'
     else: 
         raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
@@ -926,9 +937,8 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
     """Retrieve file information dictionary from filename."""
     # TODO: sensor and product_level can be removed as function arguments
     from himawari_api.listing import GLOB_FNAME_PATTERN
+    
     # Infer sensor and product_level if not provided
-    # if sensor is None:
-    #    sensor = _infer_sensor(fname)
     if product_level is None: 
         product_level = _infer_product_level(fname)
         
@@ -947,36 +957,47 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
     info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0) # Removed second=0
     info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0)
     
-    # Special treatment for AHI L2 products
-    if ((info_dict.get("product_scene_abbr") is not None) and ("FLDK" not in info_dict.get("product_scene_abbr"))):
-        # Identify scene_abbr
-        product, scene_abbr = _separate_product_scene_abbr(
-            info_dict.get("product_scene_abbr")
-        )
-        info_dict["product"] = product
-        info_dict["scene_abbr"] = scene_abbr
-        del info_dict["product_scene_abbr"]
-        # # Special treatment for CMIP to extract channels                     # Don't know what that is
-        # if product == "CMIP":
-        #     scan_mode_channels = info_dict["scan_mode"]
-        #     scan_mode = scan_mode_channels[0:3]
-        #     channels = scan_mode_channels[3:]
-        #     info_dict["scan_mode"] = scan_mode
-        #     info_dict["channels"] = channels
-            
-    # Special treatment for AHI products to retrieve sector                    # Is that needed ?
-    if sensor == 'AHI':
-        if 'M' in info_dict["scene_abbr"]:
-            sector = 'M'
+    # Special treatment to identify regions 
+    sector = info_dict['sector']
+    if sector not in "FLDK": 
+        if "JP" in sector: 
+            region = sector.replace("JP","") 
+            sector = "Japan"
+            info_dict['sector'] = sector 
+            info_dict['region'] = region  # or scene abbreviation: scene_abbr
+        elif "R" in sector: 
+            region = sector.replace("R","")
+            sector = "Target"
+            info_dict['sector'] = sector 
+            info_dict['region'] = region 
+
+    # Special treatment to identify Rad product 
+    if not info_dict.get("product", False):
+        info_dict['product'] = "Rad"
+        info_dict['product_level'] = "L1b"
+    else: 
+        info_dict['product_level'] = "L2" 
+    
+    # Special treatment to homogenize L2 products CLOUDS AND RRQPE 
+    # --> TODO: CLOUDS product filtering must be done in _filter_file (TO BE ADAPTED FOR product args !!!)
+    if info_dict['product_level'] == "L2":
+        product = info_dict['product']
+        if product in ["CLOUD_MASK", "CMSK"]:
+            product = "CMSK"
+        elif product in ["CPHS", "CLOUD_PHASE"]: 
+            product = "CPHS"
+        elif product in ["CHGT", "CLOUD_HEIGHT"]: 
+            product = "CHGT"
+        elif product in ["RRQPE", "HYDRO_RAIN_RATE"]: 
+            product = "RRQPE"
         else: 
-            sector = info_dict["scene_abbr"] 
-        info_dict["sector"] =  sector   
+            raise NotImplementedError()
     
     # Derive satellite name  
-    platform_shortname = info_dict["platform_shortname"]
-    if 'H8' == platform_shortname:
+    platform_shortname = info_dict["platform_shortname"].upper()
+    if 'H08' == platform_shortname:
         satellite = 'HIMAWARI-8'
-    elif 'H9' == platform_shortname:
+    elif 'H09' == platform_shortname:
         satellite = 'HIMAWARI-9'
     else:
         raise ValueError(f"Processing of satellite {platform_shortname} not yet implemented.")

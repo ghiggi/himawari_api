@@ -7,11 +7,9 @@ Created on Tue Mar  1 16:34:53 2022
 """
 from .io import (
     available_protocols,
-    available_sensors,
     available_satellites,
     available_sectors,
     available_product_levels,
-    available_scan_modes,
     available_channels,
     available_products,
     available_connection_types,
