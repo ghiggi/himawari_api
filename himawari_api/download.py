@@ -187,7 +187,7 @@ def download_files(
     fs_args={},
 ):
     """
-    Donwload files from a cloud bucket storage.
+    Download files from a cloud bucket storage.
 
     Parameters
     ----------
@@ -385,7 +385,7 @@ def download_closest_files(
     fs_args={},
 ):
     """
-    Donwload files from a cloud bucket storage closest to the specified time.
+    Download files from a cloud bucket storage closest to the specified time.
 
     Parameters
     ----------
@@ -496,7 +496,7 @@ def download_latest_files(
     fs_args={},
 ):
     """
-    Donwload latest available files from a cloud bucket storage.
+    Download latest available files from a cloud bucket storage.
 
     Parameters
     ----------

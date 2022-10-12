@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2022 Ghiggi Gionata
+# Copyright (c) 2022 Ghiggi Gionata, Léo Jacquat
 
 # himawari_api is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # himawari_api. If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import fsspec
 import datetime
@@ -30,52 +31,70 @@ _satellites = {
     "himawari-9": ["H9", "HIMAWARI-9", "HIMAWARI9"],
 }
 
-# TODO: Change C (and M?) based on himawari names ?
 _sectors = {
-    "C": ["CONUS", "PACUS", "C", "P"],
-    "F": ["FULL", "FULLDISK", "FULL DISK", "F"],
-    "M": ["MESOSCALE", "M1", "M2", "M"],
+    "FLDK": ["FULL", "FULLDISK", "FULL DISK", "F"],
+    "JP": ["JAPAN", "JAPAN_AREA", "JAPAN AREA"],                           # Maybe add the sector's numbers
+    "TA": ["TARGET", "TARGET_AREA", "TARGET AREA"],
 }
+# TODO ? Keep the long channel names if they correspond ?
+# _channels = {
+#     "C01": ["C01", "1", "01", "0.47", "BLUE", "B"],
+#     "C02": ["C02", "2", "02", "0.64", "RED", "R"],
+#     "C03": ["C03", "3", "03", "0.86", "VEGGIE"],  # G
+#     "C04": ["C04", "4", "04", "1.37", "CIRRUS"],
+#     "C05": ["C05", "5", "05", "1.6", "SNOW/ICE"],
+#     "C06": ["C06", "6", "06", "2.2", "CLOUD PARTICLE SIZE", "CPS"],
+#     "C07": ["C07", "7", "07", "3.9", "IR SHORTWAVE WINDOW", "IR SHORTWAVE"],
+#     "C08": [
+#         "C08",
+#         "8",
+#         "08",
+#         "6.2",
+#         "UPPER-LEVEL TROPOSPHERIC WATER VAPOUR",
+#         "UPPER-LEVEL WATER VAPOUR",
+#     ],
+#     "C09": [
+#         "C09",
+#         "9",
+#         "09",
+#         "6.9",
+#         "MID-LEVEL TROPOSPHERIC WATER VAPOUR",
+#         "MID-LEVEL WATER VAPOUR",
+#     ],
+#     "C10": [
+#         "C10",
+#         "10",
+#         "10",
+#         "7.3",
+#         "LOWER-LEVEL TROPOSPHERIC WATER VAPOUR",
+#         "LOWER-LEVEL WATER VAPOUR",
+#     ],
+#     "C11": ["C11", "11", "11", "8.4", "CLOUD-TOP PHASE", "CTP"],
+#     "C12": ["C12", "12", "12", "9.6", "OZONE"],
+#     "C13": ["C13", "13", "10.3", "CLEAN IR LONGWAVE WINDOW", "CLEAN IR"],
+#     "C14": ["C14", "14", "11.2", "IR LONGWAVE WINDOW", "IR LONGWAVE"],
+#     "C15": ["C15", "15", "12.3", "DIRTY LONGWAVE WINDOW", "DIRTY IR"],
+#     "C16": ["C16", "16", "13.3", "CO2 IR LONGWAVE", "CO2", "CO2 IR"],
+# }
 
-# TODO: Change BAND 3.. DIFFERENT FROM HIMAWARI AHI ... 
+# - Channel informations : https://www.data.jma.go.jp/mscweb/en/himawari89/space_segment/spsg_ahi.html
 _channels = {
-    "C01": ["C01", "1", "01", "0.47", "BLUE", "B"],
-    "C02": ["C02", "2", "02", "0.64", "RED", "R"],
-    "C03": ["C03", "3", "03", "0.86", "VEGGIE"],  # G
-    "C04": ["C04", "4", "04", "1.37", "CIRRUS"],
-    "C05": ["C05", "5", "05", "1.6", "SNOW/ICE"],
-    "C06": ["C06", "6", "06", "2.2", "CLOUD PARTICLE SIZE", "CPS"],
-    "C07": ["C07", "7", "07", "3.9", "IR SHORTWAVE WINDOW", "IR SHORTWAVE"],
-    "C08": [
-        "C08",
-        "8",
-        "08",
-        "6.2",
-        "UPPER-LEVEL TROPOSPHERIC WATER VAPOUR",
-        "UPPER-LEVEL WATER VAPOUR",
-    ],
-    "C09": [
-        "C09",
-        "9",
-        "09",
-        "6.9",
-        "MID-LEVEL TROPOSPHERIC WATER VAPOUR",
-        "MID-LEVEL WATER VAPOUR",
-    ],
-    "C10": [
-        "C10",
-        "10",
-        "10",
-        "7.3",
-        "LOWER-LEVEL TROPOSPHERIC WATER VAPOUR",
-        "LOWER-LEVEL WATER VAPOUR",
-    ],
-    "C11": ["C11", "11", "11", "8.4", "CLOUD-TOP PHASE", "CTP"],
-    "C12": ["C12", "12", "12", "9.6", "OZONE"],
-    "C13": ["C13", "13", "10.3", "CLEAN IR LONGWAVE WINDOW", "CLEAN IR"],
-    "C14": ["C14", "14", "11.2", "IR LONGWAVE WINDOW", "IR LONGWAVE"],
-    "C15": ["C15", "15", "12.3", "DIRTY LONGWAVE WINDOW", "DIRTY IR"],
-    "C16": ["C16", "16", "13.3", "CO2 IR LONGWAVE", "CO2", "CO2 IR"],
+    "C01": ["C01", "1", "01", "0.47"],
+    "C02": ["C02", "2", "02", "0.51"],
+    "C03": ["C03", "3", "03", "0.64", "VIS"],                                  # Maybe change to 0.63
+    "C04": ["C04", "4", "04", "0.86"],
+    "C05": ["C05", "5", "05", "1.6"],
+    "C06": ["C06", "6", "06", "2.3"],
+    "C07": ["C07", "7", "07", "3.9", "IR4"],
+    "C08": ["C08", "8", "08", "6.2", "IR3"],
+    "C09": ["C09", "9", "09", "6.9"],
+    "C10": ["C10", "10", "10", "7.3" ],
+    "C11": ["C11", "11", "11", "8.6"],
+    "C12": ["C12", "12", "12", "9.6"],
+    "C13": ["C13", "13", "10.4", "IR1"],
+    "C14": ["C14", "14", "11.2"],
+    "C15": ["C15", "15", "12.4", "IR2"],
+    "C16": ["C16", "16", "13.3"],
 }
 
 PROTOCOLS = ["s3", "local", "file"]
@@ -90,16 +109,16 @@ def available_protocols():
     return BUCKET_PROTOCOLS
 
 
-def available_sensors():
-    """Return a list of available sensors."""
-    from himawari_api.listing import PRODUCTS
+# def available_sensors():                                                     # Not needed : only 1 sensor on board (AHI)
+#     """Return a list of available sensors."""
+#     from himawari_api.listing import PRODUCTS
 
-    return list(PRODUCTS.keys())
+#     return list(PRODUCTS.keys())
 
 
 def available_satellites():
     """Return a list of available satellites."""
-    return list(_satellites.keys())
+    return list(_satellites.keys())                                            # TODO ? How to define keys ?
 
 
 def available_sectors(product=None):
@@ -122,7 +141,7 @@ def available_sectors(product=None):
             return specific_sectors
 
 
-def available_product_levels(sensors=None):
+def available_product_levels():
     """Return a list of available product levels.
 
     If `sensors` is specified, it returns the product levels available for
@@ -131,36 +150,29 @@ def available_product_levels(sensors=None):
 
     from himawari_api.listing import PRODUCTS
 
-    if sensors is None:
-        return ["L1b", "L2"]
-    else:
-        if isinstance(sensors, str):
-            sensors = [sensors]
-        product_levels = np.concatenate(
-            [list(PRODUCTS[sensor].keys()) for sensor in sensors]
-        )
-        product_levels = np.unique(product_levels).tolist()
-        return product_levels
+    product_levels = list(PRODUCTS.AHI.keys())           
+    product_levels = np.unique(product_levels).tolist()
+    return product_levels
 
 
-def available_scan_modes():
-    """Return available scan modes for AHI.
+# def available_scan_modes():                                                  # There seems to be only one scan mode
+#     """Return available scan modes for AHI.
 
-    Scan modes:
-    - M3: Default scan strategy before 2 April 2019.
-          --> Full Disk every 15 minutes
-          --> CONUS/PACUS every 5 minutes
-          --> M1 and M2 every 1 minute
-    - M6: Default scan strategy since 2 April 2019.
-          --> Full Disk every 10 minutes
-          --> CONUS/PACUS every 5 minutes
-          --> M1 and M2 every 5 minutes
-    - M4: Only Full Disk every 5 minutes
-          --> Example: Dec 4 2018, ...
-    """
-    # TODO: UPDATE THE DOC BASED ON HIMAWARI SCAN MODES 
-    scan_mode = ["M3", "M4", "M6"]
-    return scan_mode
+#     Scan modes:
+#     - M3: Default scan strategy before 2 April 2019.
+#           --> Full Disk every 15 minutes
+#           --> CONUS/PACUS every 5 minutes
+#           --> M1 and M2 every 1 minute
+#     - M6: Default scan strategy since 2 April 2019.
+#           --> Full Disk every 10 minutes
+#           --> CONUS/PACUS every 5 minutes
+#           --> M1 and M2 every 5 minutes
+#     - M4: Only Full Disk every 5 minutes
+#           --> Example: Dec 4 2018, ...
+#     """
+#     # TODO: UPDATE THE DOC BASED ON HIMAWARI SCAN MODES 
+#     scan_mode = ["M3", "M4", "M6"]
+#     return scan_mode
 
 
 def available_channels():
@@ -185,18 +197,23 @@ def available_products(sensors=None, product_levels=None):
 
 def available_group_keys():
     """Return a list of available group_keys."""
-    # TODO: MAYBE TO ADAPT BASED ON THE GLOB FPATTERN ...
+    # TODO: MAYBE TO ADAPT BASED ON THE GLOB FPATTERN : NOT SURE !!
     group_keys = [
-        "system_environment",
-        "sensor",  # AHI
-        "product_level",
-        "product",       # ...
-        "scene_abbr",  # ["F", "C", "M1", "M2"]
-        "scan_mode",  # ["M3", "M4", "M6"]
+        # "system_environment",
+        # "sensor",  # AHI
+        # "product_level",
+        "product",       # FLDK, JP, TA
+        # "scene_abbr",  # ["F", "C", "M1", "M2"] # goes
+        # "scan_mode",  # ["M3", "M4", "M6"] # goes
         "channel",  # C**
-        "platform_shortname",  # G16, G17
+        "sector", # Shouldn't it be FLDK, JP, TA ?
+        "platform_shortname",  # HM8, HM9
         "start_time",
         "end_time",
+        "production_time",
+        "spatial_res", 
+        "segment_number",
+        "segment_total"
     ]
     return group_keys
 
@@ -250,7 +267,7 @@ def _check_satellite(satellite):
     return satellite_key
 
 
-def _check_sector(sector, sensor, product=None):
+def _check_sector(sector, sensor, product=None):                               # Disambuguate with sector, segment or product
     """Check sector validity."""
     if sector is None: 
         if sensor == "AHI":
@@ -280,23 +297,23 @@ def _check_sector(sector, sensor, product=None):
     return sector_key
 
 
-def _check_sensor(sensor):
+def _check_sensor(sensor):                                                   
     """Check sensor validity."""
     if not isinstance(sensor, str):
         raise TypeError("`sensor` must be a string.")
-    valid_sensors = available_sensors()
+    valid_sensor = "AHI"
     sensor = sensor.upper()
-    if sensor not in valid_sensors:
-        raise ValueError(f"Available sensors: {valid_sensors}")
+    if sensor not in valid_sensor:
+        raise ValueError("Only available sensor: AHI")
     return sensor
 
 
-def _check_sensors(sensors):
-    """Check sensors validity."""
-    if isinstance(sensors, str):
-        sensors = [sensors]
-    sensors = [_check_sensor(sensor) for sensor in sensors]
-    return sensors
+# def _check_sensors(sensors):                                                 # Only one sensor on board (AHI)
+#     """Check sensors validity."""
+#     if isinstance(sensors, str):
+#         sensors = [sensors]
+#     sensors = [_check_sensor(sensor) for sensor in sensors]
+#     return sensors
 
 
 def _check_product_level(product_level, product=None):
@@ -373,9 +390,10 @@ def _check_start_end_time(start_time, end_time):
     # Format input
     start_time = _check_time(start_time)
     end_time = _check_time(end_time)
-    # Set resolution to minutes (TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS)
-    start_time = start_time.replace(microsecond=0, second=0)
-    end_time = end_time.replace(microsecond=0, second=0)
+    # Set resolution to minutes 
+    # TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS
+    start_time = start_time.replace(microsecond=0) # Removed second=0
+    end_time = end_time.replace(microsecond=0) # Same
     # Check start_time and end_time are chronological
     if start_time > end_time:
         raise ValueError("Provide start_time occuring before of end_time")
@@ -421,76 +439,76 @@ def _check_channels(channels=None, sensor=None):
     return channels
 
 
-def _check_scan_mode(scan_mode):
-    """Check scan_mode validity."""
-    if not isinstance(scan_mode, str):
-        raise TypeError("`scan_mode` must be a string.")
-    # Check channel follow standard name
-    scan_mode = scan_mode.upper()
-    valid_scan_modes = available_scan_modes()
-    if scan_mode in valid_scan_modes:
-        return scan_mode
-    else:
-        raise ValueError(f"Available `scan_mode`: {valid_scan_modes}")
+# def _check_scan_mode(scan_mode):
+#     """Check scan_mode validity."""
+#     if not isinstance(scan_mode, str):
+#         raise TypeError("`scan_mode` must be a string.")
+#     # Check channel follow standard name
+#     scan_mode = scan_mode.upper()
+#     valid_scan_modes = available_scan_modes()
+#     if scan_mode in valid_scan_modes:
+#         return scan_mode
+#     else:
+#         raise ValueError(f"Available `scan_mode`: {valid_scan_modes}")
 
 
-def _check_scan_modes(scan_modes=None, sensor=None):
-    """Check scan_modes validity."""
-    if scan_modes is None:
-        return scan_modes
-    if sensor is not None:
-        if sensor != "AHI":
-            raise ValueError("`sensor` must be 'AHI' if the scan_mode is specified!")
-    if isinstance(scan_modes, str):
-        scan_modes = [scan_modes]
-    scan_modes = [_check_scan_mode(scan_mode) for scan_mode in scan_modes]
-    return scan_modes
+# def _check_scan_modes(scan_modes=None, sensor=None):
+#     """Check scan_modes validity."""
+#     if scan_modes is None:
+#         return scan_modes
+#     if sensor is not None:
+#         if sensor != "AHI":
+#             raise ValueError("`sensor` must be 'AHI' if the scan_mode is specified!")
+#     if isinstance(scan_modes, str):
+#         scan_modes = [scan_modes]
+#     scan_modes = [_check_scan_mode(scan_mode) for scan_mode in scan_modes]
+#     return scan_modes
 
 
-def _check_scene_abbr(scene_abbr, sensor=None, sector=None):
-    """Check AHI mesoscale sector scene_abbr validity."""
-    if scene_abbr is None:
-        return scene_abbr
-    if sensor is not None:
-        if sensor != "AHI":
-            raise ValueError("`sensor` must be 'AHI' if the scene_abbr is specified!")
-    if sector is not None:
-        if sector != "M":
-            raise ValueError("`scene_abbr` must be specified only if sector=='M' !")
-    if not isinstance(scene_abbr, (str, list)):
-        raise TypeError("Specify `scene_abbr` as string or list.")
-    if isinstance(scene_abbr, list):
-        if len(scene_abbr) == 1:
-            scene_abbr = scene_abbr[0]
-        else:
-            return None  # set to None assuming ['M1' and 'M2']
-    if scene_abbr not in ["M1", "M2"]:
-        raise ValueError("Valid `scene_abbr` values are 'M1' or 'M2'.")
-    return scene_abbr
+# def _check_scene_abbr(scene_abbr, sensor=None, sector=None):                 # There's no scene abbr in HIMAWARI ?
+#     """Check AHI mesoscale sector scene_abbr validity."""
+#     if scene_abbr is None:
+#         return scene_abbr
+#     if sensor is not None:
+#         if sensor != "AHI":
+#             raise ValueError("`sensor` must be 'AHI' if the scene_abbr is specified!")
+#     if sector is not None:
+#         if sector != "M":
+#             raise ValueError("`scene_abbr` must be specified only if sector=='M' !")
+#     if not isinstance(scene_abbr, (str, list)):
+#         raise TypeError("Specify `scene_abbr` as string or list.")
+#     if isinstance(scene_abbr, list):
+#         if len(scene_abbr) == 1:
+#             scene_abbr = scene_abbr[0]
+#         else:
+#             return None  # set to None assuming ['M1' and 'M2']
+#     if scene_abbr not in ["M1", "M2"]:
+#         raise ValueError("Valid `scene_abbr` values are 'M1' or 'M2'.")
+#     return scene_abbr
 
 
-def _check_filter_parameters(filter_parameters, sensor, sector):
-    """Check filter parameters validity.
+# def _check_filter_parameters(filter_parameters, sensor, sector):             # Not needed
+#     """Check filter parameters validity.
 
-    It ensures that scan_modes, channels and scene_abbr are valid lists (or None).
-    """
-    if not isinstance(filter_parameters, dict):
-        raise TypeError("filter_parameters must be a dictionary.")
-    scan_modes = filter_parameters.get("scan_modes")
-    channels = filter_parameters.get("channels")
-    scene_abbr = filter_parameters.get("scene_abbr")
-    if scan_modes:
-        filter_parameters["scan_modes"] = _check_scan_modes(scan_modes)
-    if channels:
-        filter_parameters["channels"] = _check_channels(channels, sensor=sensor)
-    if scene_abbr:
-        filter_parameters["scene_abbr"] = _check_scene_abbr(
-            scene_abbr, sensor=sensor, sector=sector
-        )
-    return filter_parameters
+#     It ensures that scan_modes, channels and scene_abbr are valid lists (or None).
+#     """
+#     if not isinstance(filter_parameters, dict):
+#         raise TypeError("filter_parameters must be a dictionary.")
+#     scan_modes = filter_parameters.get("scan_modes")
+#     channels = filter_parameters.get("channels")
+#     scene_abbr = filter_parameters.get("scene_abbr")
+#     if scan_modes:
+#         filter_parameters["scan_modes"] = _check_scan_modes(scan_modes)
+#     if channels:
+#         filter_parameters["channels"] = _check_channels(channels, sensor=sensor)
+#     if scene_abbr:
+#         filter_parameters["scene_abbr"] = _check_scene_abbr(
+#             scene_abbr, sensor=sensor, sector=sector
+#         )
+#     return filter_parameters
 
 
-def _check_group_by_key(group_by_key):
+def _check_group_by_key(group_by_key):                                         # What's the use for this function ?
     """Check group_by_key validity."""
     if not isinstance(group_by_key, (str, type(None))):
         raise TypeError("`group_by_key`must be a string or None.")
@@ -522,20 +540,20 @@ def _check_connection_type(connection_type, protocol):
     return connection_type
 
 
-def _check_unique_scan_mode(fpath_dict, sensor, product_level):
-    """Check files have unique scan_mode validity."""
-    # TODO: raise information when it changes
-    if sensor == "AHI":
-        list_datetime = list(fpath_dict.keys())
-        fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
-        list_scan_modes = _get_key_from_filepaths(
-            fpaths_examplars, key="scan_mode", sensor=sensor, product_level=product_level,
-        )
-        list_scan_modes = np.unique(list_scan_modes).tolist()
-        if len(list_scan_modes) != 1:
-            raise ValueError(
-                f"There is a mixture of the following scan_mode: {list_scan_modes}."
-            )
+# def _check_unique_scan_mode(fpath_dict, sensor, product_level):               # Only one scan mode
+#     """Check files have unique scan_mode validity."""
+#     # TODO: raise information when it changes
+#     if sensor == "AHI":
+#         list_datetime = list(fpath_dict.keys())
+#         fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
+#         list_scan_modes = _get_key_from_filepaths(
+#             fpaths_examplars, key="scan_mode", sensor=sensor, product_level=product_level,
+#         )
+#         list_scan_modes = np.unique(list_scan_modes).tolist()
+#         if len(list_scan_modes) != 1:
+#             raise ValueError(
+#                 f"There is a mixture of the following scan_mode: {list_scan_modes}."
+            # )
 
 
 def _check_interval_regularity(list_datetime):
@@ -596,7 +614,7 @@ def get_available_online_product(protocol, satellite):
     return products_dict
 
 
-def get_dict_info_products(sensors=None, product_levels=None):
+def get_dict_info_products(sensors=None, product_levels=None):                  # TO check (maybe) but should be okay as is 
     """Return a dictionary with sensors, product_level and product informations.
 
     The dictionary has structure {sensor: {product_level: [products]}}
@@ -608,11 +626,11 @@ def get_dict_info_products(sensors=None, product_levels=None):
     if sensors is None and product_levels is None:
         return PRODUCTS
     if sensors is None:
-        sensors = available_sensors()
+        sensors = "AHI"
     if product_levels is None:
         product_levels = available_product_levels()
     # Subset by sensors
-    sensors = _check_sensors(sensors)
+    sensors = _check_sensor(sensors)                                            # Changed from "_check_sensorS()"
     intermediate_listing = {sensor: PRODUCTS[sensor] for sensor in sensors}
     # Subset by product_levels
     product_levels = _check_product_levels(product_levels)
@@ -751,7 +769,7 @@ def get_bucket(protocol, satellite):
 
     # Dictionary of bucket and urls
     bucket_dict = {
-        "s3": "s3://noaa-{}".format(satellite.replace("-", "")), 
+        "s3": "s3://noaa-{}".format(satellite.replace("-", "")),                # Should be himawari8
     }
     return bucket_dict[protocol]
 
@@ -804,15 +822,16 @@ def _get_bucket_prefix(protocol):
         )
     return prefix
 
-# TODO: THIS MIGHT BE UPDATED 
 def _get_product_name(sensor, product_level, product, sector):
     """Get bucket directory name of a product."""
-    if sensor=='AHI':
-        product_name = f"{sensor}-{product_level}-{product}{sector}"
+    
+    if sensor == "AHI":
+        # TODO : assertion on sensors ?
+            product_name = f"{sensor}-{product_level}-{product}"
     else: 
-        product_name = f"{sensor}-{product_level}-{product}"
+        raise ValueError("Sensor should be specified (AHI)")
     return product_name
-
+        
 def _get_product_dir(
     satellite, sensor, product_level, product, sector, protocol=None, base_dir=None
 ):
@@ -833,9 +852,9 @@ def infer_satellite_from_path(path):
     himawari8_patterns = ['himawari8', 'himawari-8', 'H8']
     himawari9_patterns = ['himawari9', 'himawari-9', 'H9'] 
     if np.any([pattern in path for pattern in himawari8_patterns]):
-        return 'himawari-16'
+        return 'himawari-8'
     if np.any([pattern in path for pattern in himawari9_patterns]):
-        return 'himawari-17'
+        return 'himawari-9'
     else:
         raise ValueError("Unexpected HIMAWARI file path.")
 
@@ -848,48 +867,59 @@ def remove_bucket_address(fpath):
 
 ####---------------------------------------------------------------------------.
 #### Filtering
+# TODO: There might not be the product name in the filename.
+# L1b :
+    # FLDK_R for full disk
+    # JP{sector:2s}_R for Japan
+    # B{target_area:2s}_R for target area
+# L2
+# HYDRO_RAIN_RATE, CLOUD_HEIGHT, CLOUD_MASK and CLOUD_PHASE are in the filename
 def _infer_product_level(fpath):
     """Infer product_level from filepath."""
     fname = os.path.basename(fpath)
+    # from himawari_api.listing import AHI_L2_PRODUCTS
+    ahi_l2_products = ["HYDRO_RAIN_RATE", "CLOUD_HEIGHT", "CLOUD_MASK", "CLOUD_PHASE"]
+    for prodname in ahi_l2_products:
+        if prodname in fname:
+            return "L2"
+    # ahi_l1b_products = ["FLDK_R", "JP",  ]                                      # how to detect target area ?
     if '-L1b-' in fname: 
         return 'L1b'
-    elif '-L2-' in fname: 
-        return 'L2'
     else: 
         raise ValueError(f"`product_level` could not be inferred from {fname}.")
 
-### TODO: THIS MUST LIKELY BE CHANGED
-def _infer_sensor(fpath):
-    """Infer sensor from filepath."""
-    fname = os.path.basename(fpath)
-    if '_AHI-' in fname: 
-        return 'AHI'
-    else: 
-        raise ValueError(f"`sensor` could not be inferred from {fname}.")
+### TODO: THIS MUST LIKELY BE CHANGED : not needed, AHI is the only sensor.
+# def _infer_sensor(fpath):
+#     """Infer sensor from filepath."""
+#     fname = os.path.basename(fpath)
+#     if 'AHI' in fname: 
+#         return 'AHI'
+#     else: 
+#         raise ValueError(f"`sensor` could not be inferred from {fname}.")
 
 # TODO HERE TO MODIFY FOR HIMAWARI ... H8? NOT SURE
 def _infer_satellite(fpath):
     """Infer satellite from filepath."""
     fname = os.path.basename(fpath)
-    if '_H8_' in fname: 
+    if ('H8' in fname)or("himawari8" in fname): 
         return 'HIMAWARI-8'
-    elif '_H9_-' in fname: 
+    elif ('H9' in fname)or("himawari9" in fname): 
         return 'HIMAWARI-9'
     else: 
         raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
-# TODO HERE TO MODIFY FOR HIMAWARI
+# TODO HERE TO MODIFY FOR HIMAWARI : JP01, 02....
 def _separate_product_scene_abbr(product_scene_abbr):
     """Return (product, scene_abbr) from <product><scene_abbr> string."""
-    last_letter = product_scene_abbr[-1]
-    # Mesoscale domain
-    if last_letter in ["1", "2"]:
+
+    if "FLDK" in product_scene_abbr:
+        raise ValueError("Not an abbreviation : Full Disk")
+    elif "JP" in product_scene_abbr:
         return product_scene_abbr[:-2], product_scene_abbr[-2:]
-    # CONUS and Full Disc
-    elif last_letter in ["F", "C"]:
-        return product_scene_abbr[:-1], product_scene_abbr[-1]
+    elif "TA" in product_scene_abbr:
+        return product_scene_abbr[:-2], product_scene_abbr[-2:]
     else:
-        raise NotImplementedError("Adapat the file patterns.")
+        raise NotImplementedError("Adapt the file patterns.")
 
 
 def _get_info_from_filename(fname, sensor=None, product_level=None):
@@ -897,8 +927,8 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
     # TODO: sensor and product_level can be removed as function arguments
     from himawari_api.listing import GLOB_FNAME_PATTERN
     # Infer sensor and product_level if not provided
-    if sensor is None:
-        sensor = _infer_sensor(fname)
+    # if sensor is None:
+    #    sensor = _infer_sensor(fname)
     if product_level is None: 
         product_level = _infer_product_level(fname)
         
@@ -914,11 +944,11 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
     assert product_level == info_dict['product_level']
     
     # Round start_time and end_time to minute resolution
-    info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0, second=0)
-    info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0, second=0)
+    info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0) # Removed second=0
+    info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0)
     
     # Special treatment for AHI L2 products
-    if info_dict.get("product_scene_abbr") is not None:
+    if ((info_dict.get("product_scene_abbr") is not None) and ("FLDK" not in info_dict.get("product_scene_abbr"))):
         # Identify scene_abbr
         product, scene_abbr = _separate_product_scene_abbr(
             info_dict.get("product_scene_abbr")
@@ -926,15 +956,15 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
         info_dict["product"] = product
         info_dict["scene_abbr"] = scene_abbr
         del info_dict["product_scene_abbr"]
-        # Special treatment for CMIP to extract channels
-        if product == "CMIP":
-            scan_mode_channels = info_dict["scan_mode"]
-            scan_mode = scan_mode_channels[0:3]
-            channels = scan_mode_channels[3:]
-            info_dict["scan_mode"] = scan_mode
-            info_dict["channels"] = channels
+        # # Special treatment for CMIP to extract channels                     # Don't know what that is
+        # if product == "CMIP":
+        #     scan_mode_channels = info_dict["scan_mode"]
+        #     scan_mode = scan_mode_channels[0:3]
+        #     channels = scan_mode_channels[3:]
+        #     info_dict["scan_mode"] = scan_mode
+        #     info_dict["channels"] = channels
             
-    # Special treatment for AHI products to retrieve sector 
+    # Special treatment for AHI products to retrieve sector                    # Is that needed ?
     if sensor == 'AHI':
         if 'M' in info_dict["scene_abbr"]:
             sector = 'M'
@@ -1119,9 +1149,8 @@ def filter_files(
     """
     sensor = _check_sensor(sensor)
     product_level = _check_product_level(product_level, product=None)
-    scan_modes = _check_scan_modes(scan_modes)
     channels = _check_channels(channels, sensor=sensor)
-    scene_abbr = _check_scene_abbr(scene_abbr, sensor=sensor)
+    # scene_abbr = _check_scene_abbr(scene_abbr, sensor=sensor)
     start_time, end_time = _check_start_end_time(start_time, end_time)
     fpaths = _filter_files(
         fpaths=fpaths,
@@ -1294,9 +1323,9 @@ def find_files(
     sector = _check_sector(sector, product=product, sensor=sensor)
     start_time, end_time = _check_start_end_time(start_time, end_time)
 
-    filter_parameters = _check_filter_parameters(
-        filter_parameters, sensor, sector=sector
-    )
+    # filter_parameters = _check_filter_parameters(                             # No such function
+    #     filter_parameters, sensor, sector=sector
+    # )
     group_by_key = _check_group_by_key(group_by_key)
 
     # Add start_time and end_time to filter_parameters
@@ -1876,15 +1905,15 @@ def find_previous_files(
     # Perform consistency checks
     if check_consistency:
         # Check constant scan_mode
-        _check_unique_scan_mode(fpath_dict, sensor, product_level)
+        # _check_unique_scan_mode(fpath_dict, sensor, product_level)            # There's only one scan mode
         # Check for interval regularity
         if not include_start_time: 
             list_datetime = list_datetime + [closest_time]
         _check_interval_regularity(list_datetime)
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
-        if sector == "M":
-            pass
+        # if sector == "M":
+        #     pass
     # ----------------------------------------------------------
     # Return files dictionary
     return fpath_dict
@@ -2033,8 +2062,8 @@ def find_next_files(
     # ----------------------------------------------------------
     # Perform consistency checks
     if check_consistency:
-        # Check constant scan_mode
-        _check_unique_scan_mode(fpath_dict, sensor, product_level)
+        # Check constant scan_mode                                              # There's only one scan mode 
+        # _check_unique_scan_mode(fpath_dict, sensor, product_level)
         # Check for interval regularity
         if not include_start_time: 
             list_datetime = list_datetime + [closest_time]
