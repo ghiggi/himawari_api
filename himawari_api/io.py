@@ -36,46 +36,7 @@ _sectors = {
     "Japan": ["JAPAN", "JAPAN_AREA", "JAPAN AREA"],                           # Maybe add the sector's numbers
     "Target": ["TARGET", "TARGET_AREA", "TARGET AREA"],
 }
-# TODO ? Keep the long channel names if they correspond ?
-# _channels = {
-#     "C01": ["C01", "1", "01", "0.47", "BLUE", "B"],
-#     "C02": ["C02", "2", "02", "0.64", "RED", "R"],
-#     "C03": ["C03", "3", "03", "0.86", "VEGGIE"],  # G
-#     "C04": ["C04", "4", "04", "1.37", "CIRRUS"],
-#     "C05": ["C05", "5", "05", "1.6", "SNOW/ICE"],
-#     "C06": ["C06", "6", "06", "2.2", "CLOUD PARTICLE SIZE", "CPS"],
-#     "C07": ["C07", "7", "07", "3.9", "IR SHORTWAVE WINDOW", "IR SHORTWAVE"],
-#     "C08": [
-#         "C08",
-#         "8",
-#         "08",
-#         "6.2",
-#         "UPPER-LEVEL TROPOSPHERIC WATER VAPOUR",
-#         "UPPER-LEVEL WATER VAPOUR",
-#     ],
-#     "C09": [
-#         "C09",
-#         "9",
-#         "09",
-#         "6.9",
-#         "MID-LEVEL TROPOSPHERIC WATER VAPOUR",
-#         "MID-LEVEL WATER VAPOUR",
-#     ],
-#     "C10": [
-#         "C10",
-#         "10",
-#         "10",
-#         "7.3",
-#         "LOWER-LEVEL TROPOSPHERIC WATER VAPOUR",
-#         "LOWER-LEVEL WATER VAPOUR",
-#     ],
-#     "C11": ["C11", "11", "11", "8.4", "CLOUD-TOP PHASE", "CTP"],
-#     "C12": ["C12", "12", "12", "9.6", "OZONE"],
-#     "C13": ["C13", "13", "10.3", "CLEAN IR LONGWAVE WINDOW", "CLEAN IR"],
-#     "C14": ["C14", "14", "11.2", "IR LONGWAVE WINDOW", "IR LONGWAVE"],
-#     "C15": ["C15", "15", "12.3", "DIRTY LONGWAVE WINDOW", "DIRTY IR"],
-#     "C16": ["C16", "16", "13.3", "CO2 IR LONGWAVE", "CO2", "CO2 IR"],
-# }
+
 
 # - Channel informations : https://www.data.jma.go.jp/mscweb/en/himawari89/space_segment/spsg_ahi.html
 _channels = {
@@ -118,8 +79,7 @@ def available_protocols():
 
 def available_satellites():
     """Return a list of available satellites."""
-    return list(_satellites.keys())                                            # TODO ? How to define keys ?
-
+    return list(_satellites.keys())                                            
 
 def available_sectors(product=None):
     """Return a list of available sectors.
@@ -150,36 +110,16 @@ def available_product_levels():
 
     from himawari_api.listing import PRODUCTS
 
-    product_levels = list(PRODUCTS.AHI.keys())           
+    product_levels = list(PRODUCTS["AHI"])           
     product_levels = np.unique(product_levels).tolist()
     return product_levels
 
-
-# def available_scan_modes():                                                  # There seems to be only one scan mode
-#     """Return available scan modes for AHI.
-
-#     Scan modes:
-#     - M3: Default scan strategy before 2 April 2019.
-#           --> Full Disk every 15 minutes
-#           --> CONUS/PACUS every 5 minutes
-#           --> M1 and M2 every 1 minute
-#     - M6: Default scan strategy since 2 April 2019.
-#           --> Full Disk every 10 minutes
-#           --> CONUS/PACUS every 5 minutes
-#           --> M1 and M2 every 5 minutes
-#     - M4: Only Full Disk every 5 minutes
-#           --> Example: Dec 4 2018, ...
-#     """
-#     # TODO: UPDATE THE DOC BASED ON HIMAWARI SCAN MODES 
-#     scan_mode = ["M3", "M4", "M6"]
-#     return scan_mode
 
 
 def available_channels():
     """Return a list of available AHI channels."""
     channels = list(_channels.keys())
     return channels
-
 
 def available_products(sensors=None, product_levels=None):
     """Return a list of available products.
@@ -197,16 +137,15 @@ def available_products(sensors=None, product_levels=None):
 
 def available_group_keys():
     """Return a list of available group_keys."""
-    # TODO: MAYBE TO ADAPT BASED ON THE GLOB FPATTERN : NOT SURE !!
     group_keys = [
         # "system_environment",
         # "sensor",  # AHI
         # "product_level",
-        "product",       # FLDK, JP, TA
+        "product",       #
         # "scene_abbr",  # ["F", "C", "M1", "M2"] # goes
         # "scan_mode",  # ["M3", "M4", "M6"] # goes
         "channel",  # C**
-        "sector", # Shouldn't it be FLDK, JP, TA ?
+        "sector", # FLDK, JP, TA
         "platform_shortname",  # HM8, HM9
         "start_time",
         "end_time",
@@ -267,14 +206,11 @@ def _check_satellite(satellite):
     return satellite_key
 
 
-def _check_sector(sector, sensor, product=None):                               # Disambuguate with sector, segment or product
+def _check_sector(sector, product=None):                                       # TODO : create dict with correct sector terminologies : JP, Japan, ....
     """Check sector validity."""
     if sector is None: 
-        if sensor == "AHI":
-            raise ValueError("If sensor='AHI', `sector` must be specified!")
-        return sector 
-    if sector is not None and sensor != "AHI": 
-        raise ValueError("`sector`must be specified only for sensor='AHI'.")
+        raise ValueError("'sector' must be specified.")
+
     if not isinstance(sector, str):
         raise TypeError("`sector` must be a string.")
     # Retrieve sector key accounting for possible aliases
@@ -286,7 +222,7 @@ def _check_sector(sector, sensor, product=None):                               #
     # Raise error if provided unvalid sector key
     if sector_key is None:
         valid_sector_keys = list(_sectors.keys())
-        raise ValueError(f"Available satellite: {valid_sector_keys}")
+        raise ValueError(f"Available sectors: {valid_sector_keys}")
     # Check the sector is valid for a given product (if specified)
     valid_sectors = available_sectors(product=product)
     if product is not None:
@@ -340,7 +276,6 @@ def _check_product_levels(product_levels):
     ]
     return product_levels
 
-
 def _check_product(product, sensor=None, product_level=None):
     """Check product validity."""
     if not isinstance(product, str):
@@ -384,19 +319,35 @@ def _check_time(time):
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
     return time
 
-
-def _check_start_end_time(start_time, end_time):
+# TODO to check
+def _check_start_end_time(start_time, end_time, res=None):
     """Check start_time and end_time validity."""
+    
     # Format input
     start_time = _check_time(start_time)
     end_time = _check_time(end_time)
-    # Set resolution to minutes 
-    # TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS
-    start_time = start_time.replace(microsecond=0) # Removed second=0
-    end_time = end_time.replace(microsecond=0) # Same
+    
+    # Set resolution to minutes
+    for time in [start_time, end_time]:
+        
+        time = time.replace(microsecond=0)
+        
+        # if resolution is set to half-minute, replace time values
+        if res == 0.5:       
+            if time.second > 45:
+                time.second = 0
+                time.minute = time.minute+1
+            elif (time.second < 45) and (time.second > 15):
+                time.second = 30
+            elif time.second < 15:
+                time.second = 0
+        else: 
+            time.second = 0
+    
     # Check start_time and end_time are chronological
     if start_time > end_time:
         raise ValueError("Provide start_time occuring before of end_time")
+        
     # Check start_time and end_time are in the past
     if start_time > datetime.datetime.utcnow():
         raise ValueError("Provide a start_time occuring in the past.")
@@ -542,7 +493,6 @@ def _check_connection_type(connection_type, protocol):
 
 # def _check_unique_scan_mode(fpath_dict, sensor, product_level):               # Only one scan mode
 #     """Check files have unique scan_mode validity."""
-#     # TODO: raise information when it changes
 #     if sensor == "AHI":
 #         list_datetime = list(fpath_dict.keys())
 #         fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
@@ -823,28 +773,27 @@ def _get_bucket_prefix(protocol):
     return prefix
 
 
-# TODO: if sector not FLDK, check product_level is L1B      
-def _get_product_name(sensor, product_level, product, sector):
+def _get_product_name(product_level, product, sector):
     """Get bucket directory name of a product."""
-    if sensor == "AHI":
-        if product == "Rad":
-            product_name = f"{sensor}-{product_level}-{sector}"
-        elif product in ["CMSK", "CHGT","CPHS"]:
-            product_name = f"{sensor}-{product_level}-{sector}-Clouds"
-        elif product in ["RRQPE"]:    
-            product_name = f"{sensor}-{product_level}-{sector}-RainfallRate"
-        else: 
-            raise ValueError(f"Retrieval not implemented for {product}.")
-
+    sensor = "AHI"
+    if sector != "FLDK":
+        if product_level == "L2":
+            raise ValueError("L2 product level provides only FLDK sector")
+    
+    if product == "RAD":
+        product_name = f"{sensor}-{product_level}-{sector}"
+    elif product in ["CMSK", "CHGT","CPHS"]:
+        product_name = f"{sensor}-{product_level}-{sector}-Clouds"
+    elif product in ["RRQPE"]:    
+        product_name = f"{sensor}-{product_level}-{sector}-RainfallRate"
     else: 
-        raise ValueError("Sensor should be specified (AHI)")
+        raise ValueError(f"Retrieval not implemented for {product}.")
         
     return product_name
         
-def _get_product_dir(
-    satellite, sensor, product_level, product, sector, protocol=None, base_dir=None
-):
+def _get_product_dir(satellite, product_level, product, sector, protocol=None, base_dir=None):
     """Get product (bucket) directory path."""
+    sensor = "AHI"
     if base_dir is None:
         bucket = get_bucket(protocol, satellite)
     else:
@@ -858,8 +807,8 @@ def _get_product_dir(
 
 def infer_satellite_from_path(path): 
     """Infer the satellite from the file path."""
-    himawari8_patterns = ['himawari8', 'himawari-8', 'H8']
-    himawari9_patterns = ['himawari9', 'himawari-9', 'H9'] 
+    himawari8_patterns = ['himawari8', 'himawari-8', 'H8', 'H08']
+    himawari9_patterns = ['himawari9', 'himawari-9', 'H9', 'H09'] 
     if np.any([pattern in path for pattern in himawari8_patterns]):
         return 'himawari-8'
     if np.any([pattern in path for pattern in himawari9_patterns]):
@@ -876,7 +825,6 @@ def remove_bucket_address(fpath):
 
 ####---------------------------------------------------------------------------.
 #### Filtering
-# TODO: There might not be the product name in the filename.
 # L1b :
     # FLDK_R for full disk
     # JP{sector:2s}_R for Japan
@@ -887,17 +835,17 @@ def _infer_product_level(fpath):
     """Infer product_level from filepath."""
     fname = os.path.basename(fpath)
     # from himawari_api.listing import AHI_L2_PRODUCTS
-    ahi_l2_products = ["HYDRO_RAIN_RATE", "CLOUD_HEIGHT", "CLOUD_MASK", "CLOUD_PHASE"]
+    ahi_l2_products = ["HYDRO_RAIN_RATE", "RRQPE", "CLOUD_HEIGHT", "CHGT", "CLOUD_MASK", "CMSK", "CLOUD_PHASE", "CPHS"]
     for prodname in ahi_l2_products:
         if prodname in fname:
             return "L2"
-    # ahi_l1b_products = ["FLDK_R", "JP",  ]     # how to detect target area ?
-    if '-L1b-' in fname: 
+    # Only if there is no L2 product, small check that it is still a product before assigning to L2
+    if 'HS' in fname:
         return 'L1b'
     else: 
         raise ValueError(f"`product_level` could not be inferred from {fname}.")
 
-### TODO: THIS MUST LIKELY BE CHANGED : not needed, AHI is the only sensor.
+###  not needed, AHI is the only sensor.
 # def _infer_sensor(fpath):
 #     """Infer sensor from filepath."""
 #     fname = os.path.basename(fpath)
@@ -906,77 +854,86 @@ def _infer_product_level(fpath):
 #     else: 
 #         raise ValueError(f"`sensor` could not be inferred from {fname}.")
 
-# TODO HERE TO MODIFY FOR HIMAWARI ... H8? NOT SURE
+def _infer_product(fpath):
+    '''Infer product from filepath.'''
+    fname = os.path.basename(fpath)
+    ahi_l2_products = ["HYDRO_RAIN_RATE", "RRQPE", "CLOUD_HEIGHT", "CHGT", "CLOUD_MASK", "CMSK", "CLOUD_PHASE", "CPHS"]
+    
+    for prodname in ahi_l2_products:
+        if prodname in fname:
+            product = prodname
+            return product
+    if 'HS' in fname:
+        return 'RAD'
+    else: 
+        raise ValueError(f"`product` could not be inferred from {fname}.")
+
 def _infer_satellite(fpath):
     """Infer satellite from filepath."""
     fname = os.path.basename(fpath)
     # GG SUGGESTION: if [h08, himawari8, himawari-8] in fpath.lower()
+    himawari8_patterns = ['himawari8', 'himawari-8', 'H8', 'H08']
+    himawari9_patterns = ['himawari9', 'himawari-9', 'H9', 'H09'] 
     
-    if ('H8' in fname) or ("himawari8" in fname): 
+    if np.any([pattern in fpath for pattern in himawari8_patterns]):
         return 'himawari-8'
-    elif ('H9' in fname) or ("himawari9" in fname): 
+    if np.any([pattern in fpath for pattern in himawari9_patterns]):
         return 'himawari-9'
     else: 
         raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
-# TODO HERE TO MODIFY FOR HIMAWARI : JP01, 02....
 def _separate_product_scene_abbr(product_scene_abbr):
-    """Return (product, scene_abbr) from <product><scene_abbr> string."""
+    """Return (sector, region) from <sector><region> string."""
 
     if "FLDK" in product_scene_abbr:
         raise ValueError("Not an abbreviation : Full Disk")
     elif "JP" in product_scene_abbr:
         return product_scene_abbr[:-2], product_scene_abbr[-2:]
-    elif "TA" in product_scene_abbr:
+    elif "R" in product_scene_abbr:
         return product_scene_abbr[:-2], product_scene_abbr[-2:]
     else:
         raise NotImplementedError("Adapt the file patterns.")
 
 
-def _get_info_from_filename(fname, sensor=None, product_level=None):
+def _get_info_from_filename(fname):
     """Retrieve file information dictionary from filename."""
-    # TODO: sensor and product_level can be removed as function arguments
     from himawari_api.listing import GLOB_FNAME_PATTERN
     
-    # Infer sensor and product_level if not provided
-    if product_level is None: 
-        product_level = _infer_product_level(fname)
+    # Infer sensor and product_level
+    sensor = "AHI"
+    product_level = _infer_product_level(fname)
+    product = _infer_product(fname)
+    
         
     # Retrieve file pattern
-    fpattern = GLOB_FNAME_PATTERN[sensor][product_level]
+    for i in GLOB_FNAME_PATTERN[sensor][product_level][product]:                # ugly but only way i could make it work
+        fpattern = i
     
     # Retrieve information from filename 
     p = Parser(fpattern)
     info_dict = p.parse(fname)
     
-    # Assert sensor and product_level are correct
-    assert sensor == info_dict['sensor']
-    assert product_level == info_dict['product_level']
+    info_dict["sensor"] = sensor
+    info_dict["product_level"] = product_level
+
     
     # Round start_time and end_time to minute resolution
-    info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0) # Removed second=0
-    info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0)
+    for time in ["start_time", "end_time", "production_time", "creation_time"]:
+        try:
+            info_dict[time] = info_dict[time].replace(microsecond=0) # Removed second=0
+        except:
+            None
     
     # Special treatment to identify regions 
     sector = info_dict['sector']
     if sector not in "FLDK": 
-        if "JP" in sector: 
-            region = sector.replace("JP","") 
-            sector = "Japan"
-            info_dict['sector'] = sector 
-            info_dict['region'] = region  # or scene abbreviation: scene_abbr
-        elif "R" in sector: 
-            region = sector.replace("R","")
-            sector = "Target"
-            info_dict['sector'] = sector 
-            info_dict['region'] = region 
-
-    # Special treatment to identify Rad product 
-    if not info_dict.get("product", False):
-        info_dict['product'] = "Rad"
-        info_dict['product_level'] = "L1b"
-    else: 
-        info_dict['product_level'] = "L2" 
+        sector = _separate_product_scene_abbr(sector)
+        region = sector[1]
+        sector = sector[0]
+    else:
+        region = None
+    info_dict["sector"] = sector
+    info_dict["region"] = int(region)
     
     # Special treatment to homogenize L2 products CLOUDS AND RRQPE 
     # --> TODO: CLOUDS product filtering must be done in _filter_file (TO BE ADAPTED FOR product args !!!)
@@ -992,6 +949,8 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
             product = "RRQPE"
         else: 
             raise NotImplementedError()
+            
+    info_dict["product"] = product
     
     # Derive satellite name  
     platform_shortname = info_dict["platform_shortname"].upper()

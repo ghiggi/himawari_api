@@ -66,3 +66,11 @@ sector = "FLDK"
 
 # TO CORRECT 
 # available_products() 
+
+# Filtering -> useful variables to test functions
+import himawari_api.io as hi
+info_dict = hi._get_info_from_filename("HS_H08_20210606_0050_B01_FLDK_R10_S0110.DAT.bz2")
+
+satellite = info_dict["satellite"]
+product = info_dict["product"]
+start_time = info_dict["start_time"]
