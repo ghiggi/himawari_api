@@ -29,43 +29,7 @@ info_dict
    
    
 ##----------------------------------------------------------------------------.
-# M1 , M2
-
- 
-# region or scene_abbr
-
-# satellite = "HIMAWARI-8"
-# sector = [FLDK, Japan, Target]
-# product = ["Rad", "CMSK", "CHGT", "CPHS", "RRQPE"]
-# region = "01","02",03", "04"       # FOR JAPAN  
-# region = "301", "302", "303", 304" # For Target 
-
-
-
-sector = info_dict['sector']
-if sector not in "FLDK": 
-    if "JP" in sector: 
-        region = sector.replace("JP","")
-        sector = "Japan"
-        info_dict['sector'] = sector 
-        info_dict['region'] = region 
-    elif "R" in sector: 
-        region = sector.replace("R","")
-        sector = "Target"
-        info_dict['sector'] = sector 
-        info_dict['region'] = region 
-        
-        
-        
-get_bucket(protocol="s3", satellite="himawari-8")
-
-sensor = "AHI"
-product_level = "L1b"
-product = "Rad"
-sector = "FLDK"
-
-# TO CORRECT 
-# available_products() 
+group_by_key = None
 
 # Filtering -> useful variables to test functions
 import himawari_api.io as hi

@@ -6,7 +6,7 @@ Created on Tue Mar 22 11:13:47 2022
 @author: ghiggi
 """
 import datetime
-from goes_api import (
+from himawari_api import (
     find_closest_start_time,
     download_files,
     download_previous_files,
@@ -23,24 +23,21 @@ protocol = "s3"
 fs_args = {}
 
 ###---------------------------------------------------------------------------.
-#### Define satellite, sensor, product_level and product
-satellite = "GOES-16"
-sensor = "ABI"
+#### Define satellite, product_level and product
+satellite = "HIMAWARI-8"
 product_level = "L1B"
 product = "Rad"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
-start_time = datetime.datetime(2019, 11, 17, 11, 30)
-end_time = datetime.datetime(2019, 11, 17, 11, 40)
+start_time = datetime.datetime(2021, 11, 17, 11, 30)
+end_time = datetime.datetime(2021, 11, 17, 11, 40)
 
-sector = "M"
-scene_abbr = ["M1"]  # None download and find both locations
-scan_modes = None  # select all scan modes (M3, M4, M6)
+sector = "Japan"
+scene_abbr = ["R1"]  # None download and find both locations
 channels = None  # select all channels
 channels = ["C01", "C02"]  # select channels subset
 filter_parameters = {}
-filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
@@ -54,7 +51,6 @@ fpaths = download_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -76,7 +72,6 @@ print(fpaths)
 start_time = find_closest_start_time(
     time=start_time,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -98,7 +93,6 @@ fpaths = download_previous_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -122,7 +116,6 @@ fpaths = download_next_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -150,7 +143,6 @@ fpaths = download_latest_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,

@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Mar 24 13:58:23 2022
+Created on Wed Oct 26 15:38:44 2022
 
 @author: ghiggi
 """
 import datetime
-import himawari_api.query
 from himawari_api import (
     find_files,
-    group_files,
 )
 
 ###---------------------------------------------------------------------------.
@@ -28,23 +26,24 @@ protocol = "s3"
 fs_args = {}
 
 ###---------------------------------------------------------------------------.
-#### Define satellite, product_level and product
+#### Define satellite, sensor, product_level and product
 satellite = "HIMAWARI-8"
 product_level = "L1B"
 product = "Rad"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
-start_time = datetime.datetime(2020, 11, 17, 11, 30)
-end_time = datetime.datetime(2020, 11, 17, 11, 40)
+start_time = datetime.datetime(2021, 11, 17, 11, 30)
+end_time = datetime.datetime(2021, 11, 17, 11, 50)
 
-sector = "Target"
-scene_abbr = None  
-channels = None  # select all channels
+sector = "Japan" # "F"          
+scene_abbr = None          # "R1"   
+channels = None            # select all channels
 channels = ["C01", "C02"]  # select channels subset
 filter_parameters = {}
 filter_parameters["channels"] = channels
-filter_parameters["scene_abbr"] = scene_abbr
+# filter_parameters["scene_abbr"] = scene_abbr
+verbose = True
 
 ####---------------------------------------------------------------------------.
 #### Find files between start_time and end_time
@@ -59,33 +58,23 @@ fpaths = find_files(
     start_time=start_time,
     end_time=end_time,
     filter_parameters=filter_parameters,
-    verbose=True,
+    group_by_key="start_time",
+    verbose=verbose,
 )
 
 print(fpaths)
-####---------------------------------------------------------------------------.
-#### Query filepaths 
-# - List of filepaths 
-himawari_api.query.start_time(fpaths)
-himawari_api.query.end_time(fpaths)
-himawari_api.query.product_level(fpaths)
-himawari_api.query.product(fpaths)
-himawari_api.query.sector(fpaths)
-himawari_api.query.scene_abbr(fpaths)
-himawari_api.query.channel(fpaths)
-himawari_api.query.satellite(fpaths)
 
-# - Dictionary with list of filepaths 
-fpaths_dict =  group_files(fpaths, key="start_time")
-print(fpaths_dict)
-himawari_api.query.start_time(fpaths_dict)
-himawari_api.query.end_time(fpaths_dict)
-himawari_api.query.product_level(fpaths_dict)
-himawari_api.query.product(fpaths_dict)
-himawari_api.query.sector(fpaths_dict)
-himawari_api.query.scene_abbr(fpaths_dict)
-himawari_api.query.channel(fpaths_dict)
-himawari_api.query.satellite(fpaths_dict)
+fname = 'HS_H08_20211117_1130_B01_FLDK_R10_S0110.DAT.bz2'
+connection_type = None
 
+
+# Add a function that for each timestep take only the highest resolution per band file  
+# Use group_by_key="start_time"
+# Then, use "channel" and "segment_number" from the info_dict to identify if duplicate band file 
+# Select the one with higher resolution using "spatial_res" (5, 10, 20)
+
+# TODO
+# group_by_file (dictionary with filename in the key, and the corresponding filepaths of each of the segments)
 
  
+

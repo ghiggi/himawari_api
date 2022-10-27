@@ -6,7 +6,7 @@ Created on Tue Mar 22 11:13:47 2022
 @author: ghiggi
 """
 import datetime
-from goes_api import (
+from himawari_api import (
     find_closest_start_time,
     find_latest_start_time,
     find_files,
@@ -28,31 +28,28 @@ from goes_api import (
 
 base_dir = None
 
-protocol = "gcs"
 protocol = "s3"
 fs_args = {}
 
 ###---------------------------------------------------------------------------.
 #### Define satellite, sensor, product_level and product
-satellite = "GOES-16"
-sensor = "ABI"
+satellite = "HIMAWARI-8"
 product_level = "L1B"
 product = "Rad"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
-start_time = datetime.datetime(2019, 11, 17, 11, 30)
-end_time = datetime.datetime(2019, 11, 17, 11, 40)
+start_time = datetime.datetime(2021, 11, 17, 11, 30)
+end_time = datetime.datetime(2021, 11, 17, 11, 40)
 
-sector = "M"
-scene_abbr = ["M1"]  # None download and find both locations
-scan_modes = None  # select all scan modes (M3, M4, M6)
+sector = "F"          
+# scene_abbr = ["M1"]  # None download and find both locations
 channels = None  # select all channels
 channels = ["C01", "C02"]  # select channels subset
 filter_parameters = {}
-filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
-filter_parameters["scene_abbr"] = scene_abbr
+# filter_parameters["scene_abbr"] = scene_abbr
+verbose = True
 
 ####---------------------------------------------------------------------------.
 #### Find files between start_time and end_time
@@ -61,14 +58,13 @@ fpaths = find_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
     start_time=start_time,
     end_time=end_time,
     filter_parameters=filter_parameters,
-    verbose=True,
+    verbose=verbose,
 )
 
 print(fpaths)
@@ -80,7 +76,6 @@ fpaths = find_closest_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -96,7 +91,6 @@ print(fpaths)
 start_time = find_closest_start_time(
     time=start_time,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -118,7 +112,6 @@ fpaths = find_previous_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -137,7 +130,6 @@ fpaths = find_next_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -161,7 +153,6 @@ fpaths = find_latest_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,

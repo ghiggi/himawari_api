@@ -21,7 +21,7 @@ import datetime
 import numpy as np
 import pandas as pd
 from trollsift import Parser
-from himawari_api.utils.time import _dt_to_year_doy_hour
+from himawari_api.utils.time import _dt_to_year_month_day_hhmm
 
 ####--------------------------------------------------------------------------.
 #### Alias
@@ -32,30 +32,31 @@ _satellites = {
 }
 
 _sectors = {
-    "FLDK": ["FULL", "FULLDISK", "FULL DISK", "F"],
-    "Japan": ["JAPAN", "JAPAN_AREA", "JAPAN AREA"],                           # Maybe add the sector's numbers
-    "Target": ["TARGET", "TARGET_AREA", "TARGET AREA"],
+    "FLDK": ["FLDK", "FULL", "FULLDISK", "FULL DISK", "F"],
+    "Japan": ["JAPAN", "JAPAN_AREA", "JAPAN AREA", "J"],                         
+    "Target": ["TARGET", "TARGET_AREA", "TARGET AREA", "T"],
+    "Landmark": ["LANDMARK", "M", "MESOSCALE"],
 }
 
 
 # - Channel informations : https://www.data.jma.go.jp/mscweb/en/himawari89/space_segment/spsg_ahi.html
 _channels = {
-    "B01": ["C01", "1", "01", "0.47"],
-    "B02": ["C02", "2", "02", "0.51"],
-    "B03": ["C03", "3", "03", "0.64", "VIS"],                                  # Maybe change to 0.63
-    "B04": ["C04", "4", "04", "0.86"],
-    "B05": ["C05", "5", "05", "1.6"],
-    "B06": ["C06", "6", "06", "2.3"],
-    "B07": ["C07", "7", "07", "3.9", "IR4"],
-    "B08": ["C08", "8", "08", "6.2", "IR3"],
-    "B09": ["C09", "9", "09", "6.9"],
-    "B10": ["C10", "10", "10", "7.3" ],
-    "B11": ["C11", "11", "11", "8.6"],
-    "B12": ["C12", "12", "12", "9.6"],
-    "B13": ["C13", "13", "10.4", "IR1"],
-    "B14": ["C14", "14", "11.2"],
-    "B15": ["C15", "15", "12.4", "IR2"],
-    "B16": ["C16", "16", "13.3"],
+    "B01": ["B01", "C01", "1", "01", "0.47", "0.46", "BLUE", "B"],
+    "B02": ["B02", "C02", "2", "02", "0.51", "RED", "R"],
+    "B03": ["B03", "C03", "3", "03", "0.64", "GREEN", "G"],                                 
+    "B04": ["B04", "C04", "4", "04", "0.86", "CIRRUS"],
+    "B05": ["B05", "C05", "5", "05", "1.6", "SNOW/ICE"],
+    "B06": ["B06", "C06", "6", "06", "2.3", "CLOUD PARTICLE SIZE", "CPS"],
+    "B07": ["B07", "C07", "7", "07", "3.9", "IR SHORTWAVE WINDOW", "IR SHORTWAVE"],
+    "B08": ["B08", "C08", "8", "08", "6.2", "UPPER-LEVEL TROPOSPHERIC WATER VAPOUR",  "UPPER-LEVEL WATER VAPOUR"],
+    "B09": ["B09", "C09", "9", "09", "6.9", "7.0", "MID-LEVEL TROPOSPHERIC WATER VAPOUR", "MID-LEVEL WATER VAPOUR"],
+    "B10": ["B10", "C10", "10", "10", "7.3", "LOWER-LEVEL TROPOSPHERIC WATER VAPOUR", "LOWER-LEVEL WATER VAPOUR"],
+    "B11": ["B11", "C11", "11", "11", "8.6", "CLOUD-TOP PHASE", "CTP"],
+    "B12": ["B12", "C12", "12", "12", "9.6", "OZONE"],
+    "B13": ["B13", "C13", "13", "10.4", "CLEAN IR LONGWAVE WINDOW", "CLEAN IR"],
+    "B14": ["B14", "C14", "14", "11.2", "IR LONGWAVE WINDOW", "IR LONGWAVE"],
+    "B15": ["B16","C15", "15", "12.3", "12.4", "DIRTY LONGWAVE WINDOW", "DIRTY IR"],
+    "B16": ["B16","C16", "16", "13.3", "CO2 IR LONGWAVE", "CO2", "CO2 IR"],
 }
 
 PROTOCOLS = ["s3", "local", "file"]
@@ -70,16 +71,10 @@ def available_protocols():
     return BUCKET_PROTOCOLS
 
 
-# def available_sensors():                                                     # Not needed : only 1 sensor on board (AHI)
-#     """Return a list of available sensors."""
-#     from himawari_api.listing import PRODUCTS
-
-#     return list(PRODUCTS.keys())
-
-
 def available_satellites():
     """Return a list of available satellites."""
     return list(_satellites.keys())                                            
+
 
 def available_sectors(product=None):
     """Return a list of available sectors.
@@ -102,18 +97,11 @@ def available_sectors(product=None):
 
 
 def available_product_levels():
-    """Return a list of available product levels.
-
-    If `sensors` is specified, it returns the product levels available for
-    the specified set of sensors.
-    """
-
+    """Return a list of available product levels."""
     from himawari_api.listing import PRODUCTS
-
-    product_levels = list(PRODUCTS["AHI"])           
+    product_levels = list(PRODUCTS["AHI"])        
     product_levels = np.unique(product_levels).tolist()
     return product_levels
-
 
 
 def available_channels():
@@ -121,16 +109,14 @@ def available_channels():
     channels = list(_channels.keys())
     return channels
 
-def available_products(sensors=None, product_levels=None):
-    """Return a list of available products.
 
-    Specifying `sensors` and/or `product_levels` allows to retrieve only a
-    specific subset of the list.
+def available_products(product_levels=None):
+    """Return a list of available products.
+    
+    Specifying `product_levels` allows to retrieve only a specific subset of the list.
     """
     # Get product listing dictionary
-    products_dict = get_dict_product_sensor(
-        sensors=sensors, product_levels=product_levels
-    )
+    products_dict = get_dict_product_sensor(product_levels=product_levels)
     products = list(products_dict.keys())
     return products
 
@@ -138,15 +124,11 @@ def available_products(sensors=None, product_levels=None):
 def available_group_keys():
     """Return a list of available group_keys."""
     group_keys = [
-        # "system_environment",
-        # "sensor",  # AHI
-        # "product_level",
-        "product",       #
-        # "scene_abbr",  # ["F", "C", "M1", "M2"] # goes
-        # "scan_mode",  # ["M3", "M4", "M6"] # goes
-        "channel",  # C**
-        "sector", # FLDK, JP, TA
-        "platform_shortname",  # HM8, HM9
+        "product",
+        "scene_abbr",  # ["R1","R2","R3","R4", "R5"]
+        "channel",     # B**
+        "sector",      # FLDK, Japan, Target, Landmark
+        "platform_shortname",   
         "start_time",
         "end_time",
         "production_time",
@@ -206,7 +188,7 @@ def _check_satellite(satellite):
     return satellite_key
 
 
-def _check_sector(sector, product=None):                                       # TODO : create dict with correct sector terminologies : JP, Japan, ....
+def _check_sector(sector, product=None):                                      
     """Check sector validity."""
     if sector is None: 
         raise ValueError("'sector' must be specified.")
@@ -233,25 +215,6 @@ def _check_sector(sector, product=None):                                       #
     return sector_key
 
 
-def _check_sensor(sensor):                                                   
-    """Check sensor validity."""
-    if not isinstance(sensor, str):
-        raise TypeError("`sensor` must be a string.")
-    valid_sensor = "AHI"
-    sensor = sensor.upper()
-    if sensor not in valid_sensor:
-        raise ValueError("Only available sensor: AHI")
-    return sensor
-
-
-# def _check_sensors(sensors):                                                 # Only one sensor on board (AHI)
-#     """Check sensors validity."""
-#     if isinstance(sensors, str):
-#         sensors = [sensors]
-#     sensors = [_check_sensor(sensor) for sensor in sensors]
-#     return sensors
-
-
 def _check_product_level(product_level, product=None):
     """Check product_level validity."""
     if not isinstance(product_level, str):
@@ -276,11 +239,11 @@ def _check_product_levels(product_levels):
     ]
     return product_levels
 
-def _check_product(product, sensor=None, product_level=None):
+def _check_product(product, product_level=None):
     """Check product validity."""
     if not isinstance(product, str):
         raise TypeError("`product` must be a string.")
-    valid_products = available_products(sensors=sensor, product_levels=product_level)
+    valid_products = available_products(product_levels=product_level)
     # Retrieve product by accounting for possible aliases (upper/lower case)
     product_key = None
     for possible_values in valid_products:
@@ -288,14 +251,11 @@ def _check_product(product, sensor=None, product_level=None):
             product_key = possible_values
             break
     if product_key is None:
-        if sensor is None and product_level is None:
+        if product_level is None:
             raise ValueError(f"Available products: {valid_products}")
         else:
-            sensor = "" if sensor is None else sensor
             product_level = "" if product_level is None else product_level
-            raise ValueError(
-                f"Available {product_level} products for {sensor}: {valid_products}"
-            )
+            raise ValueError(f"Available {product_level} products: {valid_products}")
     return product_key
 
 
@@ -319,30 +279,35 @@ def _check_time(time):
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
     return time
 
-# TODO to check
+
 def _check_start_end_time(start_time, end_time, res=None):
     """Check start_time and end_time validity."""
-    
     # Format input
     start_time = _check_time(start_time)
     end_time = _check_time(end_time)
     
-    # Set resolution to minutes
-    for time in [start_time, end_time]:
-        
-        time = time.replace(microsecond=0)
-        
-        # if resolution is set to half-minute, replace time values
-        if res == 0.5:       
-            if time.second > 45:
-                time.second = 0
-                time.minute = time.minute+1
-            elif (time.second < 45) and (time.second > 15):
-                time.second = 30
-            elif time.second < 15:
-                time.second = 0
-        else: 
-            time.second = 0
+    # Set resolution to seconds
+    start_time = start_time.replace(microsecond=0)
+    end_time = end_time.replace(microsecond=0)
+   
+    # Round seconds to 00 or 30 
+    # TODO @Leo in a separate function
+    # If [0-15] --> 00 
+    # If [15-45] --> 30 
+    # If [45-59] --> 0 (and add 1 minute)
+    
+    # for time in [start_time, end_time]:      
+    #     # if resolution is set to half-minute, replace time values
+    #     if res == 0.5:       
+    #         if time.second > 45:
+    #             time.second = 0
+    #             time.minute = time.minute+1
+    #         elif (time.second < 45) and (time.second > 15):
+    #             time.second = 30
+    #         elif time.second < 15:
+    #             time.second = 0
+    #     else: 
+    #         time.second = 0
     
     # Check start_time and end_time are chronological
     if start_time > end_time:
@@ -377,86 +342,61 @@ def _check_channel(channel):
         return channel_key
 
 
-def _check_channels(channels=None, sensor=None):
+def _check_channels(channels=None):
     """Check channels validity."""
     if channels is None:
         return channels
-    if sensor is not None:
-        if sensor != "AHI":
-            raise ValueError("`sensor` must be 'AHI' if the channels are specified!")
     if isinstance(channels, str):
         channels = [channels]
     channels = [_check_channel(channel) for channel in channels]
     return channels
 
 
-# def _check_scan_mode(scan_mode):
-#     """Check scan_mode validity."""
-#     if not isinstance(scan_mode, str):
-#         raise TypeError("`scan_mode` must be a string.")
-#     # Check channel follow standard name
-#     scan_mode = scan_mode.upper()
-#     valid_scan_modes = available_scan_modes()
-#     if scan_mode in valid_scan_modes:
-#         return scan_mode
-#     else:
-#         raise ValueError(f"Available `scan_mode`: {valid_scan_modes}")
+def _check_scene_abbr(scene_abbr, sector=None):                 
+    """Check AHI Japan, Target and Landmark sector scene_abbr validity."""
+    if scene_abbr is None:
+        return scene_abbr
+    if sector is not None:
+        if sector == "FLDK": 
+            raise ValueError("`scene_abbr` must be specified only for Japan and Target sectors !")
+    if not isinstance(scene_abbr, (str, list)):
+        raise TypeError("Specify `scene_abbr` as string or list.")
+    if isinstance(scene_abbr, str):
+        scene_abbr = [scene_abbr]
+    valid_scene_abbr = ["R1", "R2", "R3", "R4", "R5"]
+    if not np.all(np.isin(scene_abbr, valid_scene_abbr)):
+        raise ValueError(f"Valid `scene_abbr` values are {valid_scene_abbr}.")
+    if sector is not None:
+        if sector == "Japan": 
+            valid_scene_abbr = ["R1", "R2"]
+            if not np.all(np.isin(scene_abbr, valid_scene_abbr)):
+                raise ValueError(f"Valid `scene_abbr` for Japan sector are {valid_scene_abbr}.")
+        if sector == "Target":
+            valid_scene_abbr = ["R3"]
+            not np.all(np.isin(scene_abbr, valid_scene_abbr))
+            raise ValueError(f"Valid `scene_abbr` for Target sector are {valid_scene_abbr}.")
+        if sector == "Landmark":
+            valid_scene_abbr = ["R4", "R5"]
+            not np.all(np.isin(scene_abbr, valid_scene_abbr))
+            raise ValueError(f"Valid `scene_abbr` for Landmark sector are {valid_scene_abbr}.")
+            
+    return scene_abbr
 
 
-# def _check_scan_modes(scan_modes=None, sensor=None):
-#     """Check scan_modes validity."""
-#     if scan_modes is None:
-#         return scan_modes
-#     if sensor is not None:
-#         if sensor != "AHI":
-#             raise ValueError("`sensor` must be 'AHI' if the scan_mode is specified!")
-#     if isinstance(scan_modes, str):
-#         scan_modes = [scan_modes]
-#     scan_modes = [_check_scan_mode(scan_mode) for scan_mode in scan_modes]
-#     return scan_modes
+def _check_filter_parameters(filter_parameters, sector):          
+    """Check filter parameters validity.
 
-
-# def _check_scene_abbr(scene_abbr, sensor=None, sector=None):                 # There's no scene abbr in HIMAWARI ?
-#     """Check AHI mesoscale sector scene_abbr validity."""
-#     if scene_abbr is None:
-#         return scene_abbr
-#     if sensor is not None:
-#         if sensor != "AHI":
-#             raise ValueError("`sensor` must be 'AHI' if the scene_abbr is specified!")
-#     if sector is not None:
-#         if sector != "M":
-#             raise ValueError("`scene_abbr` must be specified only if sector=='M' !")
-#     if not isinstance(scene_abbr, (str, list)):
-#         raise TypeError("Specify `scene_abbr` as string or list.")
-#     if isinstance(scene_abbr, list):
-#         if len(scene_abbr) == 1:
-#             scene_abbr = scene_abbr[0]
-#         else:
-#             return None  # set to None assuming ['M1' and 'M2']
-#     if scene_abbr not in ["M1", "M2"]:
-#         raise ValueError("Valid `scene_abbr` values are 'M1' or 'M2'.")
-#     return scene_abbr
-
-
-# def _check_filter_parameters(filter_parameters, sensor, sector):             # Not needed
-#     """Check filter parameters validity.
-
-#     It ensures that scan_modes, channels and scene_abbr are valid lists (or None).
-#     """
-#     if not isinstance(filter_parameters, dict):
-#         raise TypeError("filter_parameters must be a dictionary.")
-#     scan_modes = filter_parameters.get("scan_modes")
-#     channels = filter_parameters.get("channels")
-#     scene_abbr = filter_parameters.get("scene_abbr")
-#     if scan_modes:
-#         filter_parameters["scan_modes"] = _check_scan_modes(scan_modes)
-#     if channels:
-#         filter_parameters["channels"] = _check_channels(channels, sensor=sensor)
-#     if scene_abbr:
-#         filter_parameters["scene_abbr"] = _check_scene_abbr(
-#             scene_abbr, sensor=sensor, sector=sector
-#         )
-#     return filter_parameters
+    It ensures that channels and scene_abbr are valid lists (or None).
+    """
+    if not isinstance(filter_parameters, dict):
+        raise TypeError("filter_parameters must be a dictionary.")
+    channels = filter_parameters.get("channels")
+    scene_abbr = filter_parameters.get("scene_abbr")
+    if channels:
+        filter_parameters["channels"] = _check_channels(channels)
+    if scene_abbr:
+        filter_parameters["scene_abbr"] = _check_scene_abbr(scene_abbr, sector=sector)
+    return filter_parameters
 
 
 def _check_group_by_key(group_by_key):                                         # What's the use for this function ?
@@ -491,21 +431,6 @@ def _check_connection_type(connection_type, protocol):
     return connection_type
 
 
-# def _check_unique_scan_mode(fpath_dict, sensor, product_level):               # Only one scan mode
-#     """Check files have unique scan_mode validity."""
-#     if sensor == "AHI":
-#         list_datetime = list(fpath_dict.keys())
-#         fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
-#         list_scan_modes = _get_key_from_filepaths(
-#             fpaths_examplars, key="scan_mode", sensor=sensor, product_level=product_level,
-#         )
-#         list_scan_modes = np.unique(list_scan_modes).tolist()
-#         if len(list_scan_modes) != 1:
-#             raise ValueError(
-#                 f"There is a mixture of the following scan_mode: {list_scan_modes}."
-            # )
-
-
 def _check_interval_regularity(list_datetime):
     """Check regularity of a list of timesteps."""
     # TODO: raise info when missing between ... and ...
@@ -522,49 +447,7 @@ def _check_interval_regularity(list_datetime):
 #### Dictionary retrievals
 
 
-def get_available_online_product(protocol, satellite):
-    """Get a dictionary of available products in a specific cloud bucket.
-
-    The dictionary has structure {sensor: {product_level: [products]}}.
-
-    Parameters
-    ----------
-    protocol : str
-        String specifying the cloud bucket storage that you want to explore.
-        Use `himawari_api.available_protocols()` to retrieve available protocols.
-    satellite : str
-        The name of the satellite.
-        Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    """
-    # Get filesystem and bucket
-    fs = get_filesystem(protocol)
-    bucket = get_bucket(protocol, satellite)
-    # List contents of the satellite bucket.
-    list_dir = fs.ls(bucket)
-    list_dir = [path for path in list_dir if fs.isdir(path)]
-    # Retrieve directories name
-    list_dirname = [os.path.basename(f) for f in list_dir]
-    # Remove sector letter for AHI folders
-    list_products = [
-        product[:-1] if product.startswith("AHI") else product
-        for product in list_dirname
-    ]
-    list_products = np.unique(list_products).tolist()
-    # Retrieve sensor, product_level and product list
-    list_sensor_level_product = [product.split("-") for product in list_products]
-    # Build a dictionary
-    products_dict = {}
-    for sensor, product_level, product in list_sensor_level_product:
-        if products_dict.get(sensor) is None:
-            products_dict[sensor] = {}
-        if products_dict[sensor].get(product_level) is None:
-            products_dict[sensor][product_level] = []
-        products_dict[sensor][product_level].append(product)
-    # Return dictionary
-    return products_dict
-
-
-def get_dict_info_products(sensors=None, product_levels=None):                  # TO check (maybe) but should be okay as is 
+def get_dict_info_products(product_levels=None):                  
     """Return a dictionary with sensors, product_level and product informations.
 
     The dictionary has structure {sensor: {product_level: [products]}}
@@ -572,20 +455,16 @@ def get_dict_info_products(sensors=None, product_levels=None):                  
     specific portions of the dictionary.
     """
     from himawari_api.listing import PRODUCTS
-
-    if sensors is None and product_levels is None:
-        return PRODUCTS
-    if sensors is None:
-        sensors = "AHI"
+    sensor = "AHI"
     if product_levels is None:
         product_levels = available_product_levels()
-    # Subset by sensors
-    sensors = _check_sensor(sensors)                                            # Changed from "_check_sensorS()"
-    intermediate_listing = {sensor: PRODUCTS[sensor] for sensor in sensors}
-    # Subset by product_levels
+    # Check product_levels
     product_levels = _check_product_levels(product_levels)
+    # Subset by sensors
+    sensor_dictionary = {sensor: PRODUCTS[sensor]}
+    # Subset the product dictionary 
     listing_dict = {}
-    for sensor, product_level_dict in intermediate_listing.items():
+    for sensor, product_level_dict in sensor_dictionary.items():
         for product_level, products_dict in product_level_dict.items():
             if product_level in product_levels:
                 if listing_dict.get(sensor) is None:
@@ -595,7 +474,7 @@ def get_dict_info_products(sensors=None, product_levels=None):                  
     return listing_dict
 
 
-def get_dict_product_sensor(sensors=None, product_levels=None):
+def get_dict_product_sensor(product_levels=None):
     """Return a dictionary with available product and corresponding sensors.
 
     The dictionary has structure {product: sensor}.
@@ -603,15 +482,13 @@ def get_dict_product_sensor(sensors=None, product_levels=None):
     specific subset of the dictionary.
     """
     # Get product listing dictionary
-    products_listing_dict = get_dict_info_products(
-        sensors=sensors, product_levels=product_levels
-    )
+    products_listing_dict = get_dict_info_products(product_levels=product_levels)
     # Retrieve dictionary
     products_sensor_dict = {}
     for sensor, product_level_dict in products_listing_dict.items():
         for product_level, products_dict in product_level_dict.items():
             for product in products_dict.keys():
-                products_sensor_dict[product] = sensor
+                products_sensor_dict[product] = "AHI"
     return products_sensor_dict
 
 
@@ -776,34 +653,43 @@ def _get_bucket_prefix(protocol):
 def _get_product_name(product_level, product, sector):
     """Get bucket directory name of a product."""
     sensor = "AHI"
-    if sector != "FLDK":
-        if product_level == "L2":
-            raise ValueError("L2 product level provides only FLDK sector")
-    
-    if product == "RAD":
+    if product_level == "L2" and sector != "FLDK" :
+        raise ValueError("L2 product level provides only FLDK sector.")
+    # TODO: Landmark not available in AWS right now. Currently searches in the Target directory.
+    if sector == "Landmark": 
+        sector = "Target"   
+    if product == "Rad":
         product_name = f"{sensor}-{product_level}-{sector}"
     elif product in ["CMSK", "CHGT","CPHS"]:
         product_name = f"{sensor}-{product_level}-{sector}-Clouds"
     elif product in ["RRQPE"]:    
         product_name = f"{sensor}-{product_level}-{sector}-RainfallRate"
     else: 
-        raise ValueError(f"Retrieval not implemented for {product}.")
+        raise ValueError(f"Retrieval not implemented for  product '{product}'.")
         
     return product_name
         
+
 def _get_product_dir(satellite, product_level, product, sector, protocol=None, base_dir=None):
     """Get product (bucket) directory path."""
-    sensor = "AHI"
     if base_dir is None:
         bucket = get_bucket(protocol, satellite)
     else:
         bucket = os.path.join(base_dir, satellite.upper())
         if not os.path.exists(bucket):
             raise OSError(f"The directory {bucket} does not exist.")
-    product_name = _get_product_name(sensor, product_level, product, sector)
+    product_name = _get_product_name(product_level, product, sector)
     product_dir = os.path.join(bucket, product_name)
     return product_dir
 
+
+def get_fname_glob_pattern(product_level): 
+    if product_level == "L1b": 
+        fname_pattern = "*.bz2*"
+    else: # L2 
+        fname_pattern == "*.nc*"
+    return fname_pattern 
+    
 
 def infer_satellite_from_path(path): 
     """Infer the satellite from the file path."""
@@ -825,48 +711,43 @@ def remove_bucket_address(fpath):
 
 ####---------------------------------------------------------------------------.
 #### Filtering
-# L1b :
-    # FLDK_R for full disk
-    # JP{sector:2s}_R for Japan
-    # B{target_area:2s}_R for target area
-# L2
-# HYDRO_RAIN_RATE, CLOUD_HEIGHT, CLOUD_MASK and CLOUD_PHASE are in the filename
+
+
 def _infer_product_level(fpath):
     """Infer product_level from filepath."""
     fname = os.path.basename(fpath)
-    # from himawari_api.listing import AHI_L2_PRODUCTS
-    ahi_l2_products = ["HYDRO_RAIN_RATE", "RRQPE", "CLOUD_HEIGHT", "CHGT", "CLOUD_MASK", "CMSK", "CLOUD_PHASE", "CPHS"]
-    for prodname in ahi_l2_products:
-        if prodname in fname:
-            return "L2"
-    # Only if there is no L2 product, small check that it is still a product before assigning to L2
-    if 'HS' in fname:
-        return 'L1b'
+    # Check if it is a L2 product 
+    l2_products = ["HYDRO_RAIN_RATE", "RRQPE", "CLOUD_HEIGHT", "CHGT", "CLOUD_MASK", "CMSK", "CLOUD_PHASE", "CPHS"]
+    bool_valid_product = [product in fname for product in l2_products]
+    if np.any(bool_valid_product):
+        product_level = "L2"
+    # Otherwise check if it is a L1b Rad product  
+    # - It could also check that "_B" is in fname  
+    elif 'HS' in fname:
+        product_level = 'L1b'
     else: 
         raise ValueError(f"`product_level` could not be inferred from {fname}.")
-
-###  not needed, AHI is the only sensor.
-# def _infer_sensor(fpath):
-#     """Infer sensor from filepath."""
-#     fname = os.path.basename(fpath)
-#     if 'AHI' in fname: 
-#         return 'AHI'
-#     else: 
-#         raise ValueError(f"`sensor` could not be inferred from {fname}.")
+    # Return product 
+    return product_level 
+    
 
 def _infer_product(fpath):
     '''Infer product from filepath.'''
     fname = os.path.basename(fpath)
-    ahi_l2_products = ["HYDRO_RAIN_RATE", "RRQPE", "CLOUD_HEIGHT", "CHGT", "CLOUD_MASK", "CMSK", "CLOUD_PHASE", "CPHS"]
-    
-    for prodname in ahi_l2_products:
-        if prodname in fname:
-            product = prodname
-            return product
-    if 'HS' in fname:
-        return 'RAD'
+    # Check if it is a L2 product 
+    l2_products = ["HYDRO_RAIN_RATE", "RRQPE", "CLOUD_HEIGHT", "CHGT", "CLOUD_MASK", "CMSK", "CLOUD_PHASE", "CPHS"]
+    bool_valid_product = [product in fname for product in l2_products]
+    if np.any(bool_valid_product):
+        product = l2_products[np.argwhere(bool_valid_product)[0][0]]
+    # Otherwise check if it is a L1b Rad product  
+    # - It could also check that "_B" is in fname  
+    elif 'HS' in fname:
+        product = 'Rad'
     else: 
         raise ValueError(f"`product` could not be inferred from {fname}.")
+    # Return product 
+    return product 
+
 
 def _infer_satellite(fpath):
     """Infer satellite from filepath."""
@@ -882,17 +763,38 @@ def _infer_satellite(fpath):
     else: 
         raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
-def _separate_product_scene_abbr(product_scene_abbr):
-    """Return (sector, region) from <sector><region> string."""
 
-    if "FLDK" in product_scene_abbr:
-        raise ValueError("Not an abbreviation : Full Disk")
-    elif "JP" in product_scene_abbr:
-        return product_scene_abbr[:-2], product_scene_abbr[-2:]
-    elif "R" in product_scene_abbr:
-        return product_scene_abbr[:-2], product_scene_abbr[-2:]
+def _separate_sector_observation_number(sector_observation_number):
+    """Return (sector, scene_abbr, observation_number) from <sector><observation_number> string."""
+    # See Table 4 in https://www.data.jma.go.jp/mscweb/en/himawari89/space_segment/hsd_sample/HS_D_users_guide_en_v12.pdf
+    # - FLDK
+    # - JP[01-04]  # 2.5 min ...  (4 times in 10 min)    # Japan (R1 and R2)
+    # - R[301-304] # 2.5 min      (4 times in 10 min)    # Target Area  (R3)
+    # - R[401-420] # 30 secs      (20 times in 10 min)   # LandMark Area (R4)
+    # - R[501-520] # 30 secs      (20 times in 10 min)   # LandMark Area (R5)
+    if "FLDK" in sector_observation_number:
+        sector = "FLDK"
+        scene_abbr = "F"
+        observation_number = None
+    elif "JP" in sector_observation_number:
+        sector = "JP"
+        scene_abbr = ["R1","R2"]
+        observation_number = int(sector_observation_number[-2:])
+    elif "R" in sector_observation_number:  
+        region_index = int(sector_observation_number[1])
+        if region_index == 3: 
+            sector = "Target" 
+            scene_abbr = "R3"
+        elif region_index == 4: 
+            sector = "Landmark"  
+            scene_abbr = "R4"
+        else: 
+            sector = "Landmark"  
+            scene_abbr = "R5"
+        observation_number = int(sector_observation_number[2:])
     else:
         raise NotImplementedError("Adapt the file patterns.")
+    return sector, scene_abbr, observation_number
 
 
 def _get_info_from_filename(fname):
@@ -904,10 +806,8 @@ def _get_info_from_filename(fname):
     product_level = _infer_product_level(fname)
     product = _infer_product(fname)
     
-        
     # Retrieve file pattern
-    for i in GLOB_FNAME_PATTERN[sensor][product_level][product]:                # ugly but only way i could make it work
-        fpattern = i
+    fpattern = GLOB_FNAME_PATTERN[sensor][product_level][product]       
     
     # Retrieve information from filename 
     p = Parser(fpattern)
@@ -915,8 +815,7 @@ def _get_info_from_filename(fname):
     
     info_dict["sensor"] = sensor
     info_dict["product_level"] = product_level
-
-    
+        
     # Round start_time and end_time to minute resolution
     for time in ["start_time", "end_time", "production_time", "creation_time"]:
         try:
@@ -924,19 +823,44 @@ def _get_info_from_filename(fname):
         except:
             None
     
-    # Special treatment to identify regions 
-    sector = info_dict['sector']
-    if sector not in "FLDK": 
-        sector = _separate_product_scene_abbr(sector)
-        region = sector[1]
-        sector = sector[0]
-    else:
-        region = None
-    info_dict["sector"] = sector
-    info_dict["region"] = int(region)
-    
-    # Special treatment to homogenize L2 products CLOUDS AND RRQPE 
-    # --> TODO: CLOUDS product filtering must be done in _filter_file (TO BE ADAPTED FOR product args !!!)
+    # Parse sector_observation_number in L1b Rad files
+    # - FLDK
+    # - JP[01-04]  # 2.5 min ...  (4 times in 10 min)    # Japan (R1 and R2)
+    # - R[301-304] # 2.5 min      (4 times in 10 min)    # Target Area   (R3)
+    # - R[401-420] # 30 secs      (20 times in 10 min)   # LandMark Area (R4)
+    # - R[501-520] # 30 secs      (20 times in 10 min)   # LandMark Area (R5)
+    sector_observation_number = info_dict.get("sector_observation_number", None) 
+    if sector_observation_number is not None: 
+        sector, scene_abbr, observation_number = _separate_sector_observation_number(sector_observation_number)
+        info_dict["sector"] = sector 
+        info_dict["scene_abbr"] = scene_abbr             
+        if sector == "Japan" or (sector == "Target" and scene_abbr == "R3"): 
+            start_time = info_dict["start_time"]
+            start_time = start_time + (observation_number-1)*datetime.timedelta(minutes=2, seconds=30)
+            end_time = start_time + (observation_number)*datetime.timedelta(minutes=2, seconds=30)
+            info_dict["start_time"] = start_time
+            info_dict["end_time"] = end_time
+        if sector == "Landmark" and scene_abbr in ["R4", "R5"]:
+            start_time = info_dict["start_time"]
+            start_time = start_time + (observation_number-1)*datetime.timedelta(seconds=30)
+            end_time = start_time + (observation_number)*datetime.timedelta(seconds=30)
+            info_dict["start_time"] = start_time
+            info_dict["end_time"] = end_time
+            
+    # Retrieve end_time if not available in the file name 
+    # --> L2 before the change in 2021, and L1b Rad for FLDK
+    end_time = info_dict.get('end_time', None)
+    if end_time is None: 
+        end_time = info_dict['start_time'] + datetime.timedelta(minutes=10)
+        info_dict["end_time"] = end_time
+        
+    # Retrieve sector if not available (i.e in L2)
+    sector = info_dict.get('sector', None)
+    if sector is None: 
+        sector = "FLDK" # must be a L2 Product (the fname does not contain sector info).
+        info_dict["sector"] = sector
+        
+    # Special treatment to homogenize L2 product names of CLOUDS AND RRQPE 
     if info_dict['product_level'] == "L2":
         product = info_dict['product']
         if product in ["CLOUD_MASK", "CMSK"]:
@@ -949,37 +873,49 @@ def _get_info_from_filename(fname):
             product = "RRQPE"
         else: 
             raise NotImplementedError()
-            
     info_dict["product"] = product
     
-    # Derive satellite name  
-    platform_shortname = info_dict["platform_shortname"].upper()
-    if 'H08' == platform_shortname:
-        satellite = 'HIMAWARI-8'
-    elif 'H09' == platform_shortname:
-        satellite = 'HIMAWARI-9'
-    else:
-        raise ValueError(f"Processing of satellite {platform_shortname} not yet implemented.")
+    # Derive satellite name from platform_shortname if available 
+    # - {platform_fullname} = "Himawari8", "Himawari9"
+    # - {platform_shortname} = "h08", "H08", "h09", "H09"
+    platform_shortname = info_dict.get("platform_shortname", None) 
+    platform_fullname = info_dict.get("platform_fullname", None) 
+    if platform_shortname is not None: 
+        if 'H08' == platform_shortname.upper():
+            satellite = 'HIMAWARI-8'
+        elif 'H09' == platform_shortname.upper():
+            satellite = 'HIMAWARI-9'
+        else:
+            raise ValueError(f"Processing of satellite {platform_shortname} not yet implemented.")
+    elif platform_fullname is not None: 
+        if 'HIMAWARI8' == platform_fullname.upper():
+            satellite = 'HIMAWARI-8'
+        elif 'HIMAWARI9' == platform_fullname.upper():
+            satellite = 'HIMAWARI-9'
+        else:
+            raise ValueError(f"Processing of satellite {platform_fullname} not yet implemented.")        
+    else: 
+        raise ValueError("Satellite name not derivable from file name.") 
     info_dict["satellite"] =  satellite  
         
     # Return info dictionary
     return info_dict
 
 
-def _get_info_from_filepath(fpath, sensor=None, product_level=None):
+def _get_info_from_filepath(fpath):
     """Retrieve file information dictionary from filepath."""
     if not isinstance(fpath, str):
         raise TypeError("'fpath' must be a string.")
     fname = os.path.basename(fpath)
-    return _get_info_from_filename(fname, sensor, product_level)
+    return _get_info_from_filename(fname)
 
 
-def _get_key_from_filepaths(fpaths, key, sensor=None, product_level=None):
+def _get_key_from_filepaths(fpaths, key):
     """Extract specific key information from a list of filepaths."""
     if isinstance(fpaths, str):
         fpaths = [fpaths]
     return [
-        _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
+        _get_info_from_filepath(fpath)[key] for fpath in fpaths
     ]
 
 
@@ -993,32 +929,25 @@ def get_key_from_filepaths(fpaths, key):
 
 def _filter_file(
     fpath,
-    sensor,
     product_level,
     start_time=None,
     end_time=None,
-    scan_modes=None,
     channels=None,
     scene_abbr=None,
 ):
     """Utility function to filter a filepath based on optional filter_parameters."""
-    # scan_mode and channels must be list, start_time and end_time a datetime object
+    # scene_abbr and channels must be list, start_time and end_time a datetime object
+    # TODO: Currently no way to filter R1 and R2 (I think inside a single bz2 file.)
+    # TODO: Currently R4 and R5 are not on AWS 
 
     # Get info from filepath
-    info_dict = _get_info_from_filepath(fpath, sensor, product_level)
+    info_dict = _get_info_from_filepath(fpath)
 
     # Filter by channels
     if channels is not None:
         file_channel = info_dict.get("channel")
         if file_channel is not None:
             if file_channel not in channels:
-                return None
-
-    # Filter by scan mode
-    if scan_modes is not None:
-        file_scan_mode = info_dict.get("scan_mode")
-        if file_scan_mode is not None:
-            if file_scan_mode not in scan_modes:
                 return None
 
     # Filter by scene_abbr
@@ -1031,7 +960,6 @@ def _filter_file(
     # Filter by start_time
     if start_time is not None:
         # If the file ends before start_time, do not select
-        # - Do not use <= because mesoscale data can have start_time=end_time at min resolution
         file_end_time = info_dict.get("end_time")
         if file_end_time < start_time: 
             return None
@@ -1053,11 +981,9 @@ def _filter_file(
 
 def _filter_files(
     fpaths,
-    sensor,
     product_level,
     start_time=None,
     end_time=None,
-    scan_modes=None,
     channels=None,
     scene_abbr=None,
 ):
@@ -1067,11 +993,9 @@ def _filter_files(
     fpaths = [
         _filter_file(
             fpath,
-            sensor,
             product_level,
             start_time=start_time,
             end_time=end_time,
-            scan_modes=scan_modes,
             channels=channels,
             scene_abbr=scene_abbr,
         )
@@ -1083,11 +1007,9 @@ def _filter_files(
 
 def filter_files(
     fpaths,
-    sensor,
     product_level,
     start_time=None,
     end_time=None,
-    scan_modes=None,
     scene_abbr=None,
     channels=None,
 ):
@@ -1101,9 +1023,6 @@ def filter_files(
     ----------
     fpaths : list
         List of filepaths.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1113,32 +1032,25 @@ def filter_files(
     end_time : datetime.datetime, optional
         Time defining interval end.
         The default is None (no filtering by end_time).
-    scan_modes : list, optional
-        List of AHI scan modes to select.
-        See `himawari_api.available_scan_modes()` for available scan modes.
-        The default is None (no filtering by scan_modes).
     scene_abbr : str, optional
-        String specifying selection of mesoscale scan region.
-        Either M1 or M2.
-        The default is None (no filtering by mesoscale scan region).
+        String specifying selection of Japan, Target, or Landmark scan region.
+        Either R1 or R2 for sector Japan, R3 for Target, R4 or R5 for Landmark.
+        The default is None (no filtering by scan region).
     channels : list, optional
         List of AHI channels to select.
         See `himawari_api.available_channels()` for available AHI channels.
         The default is None (no filtering by channels).
 
     """
-    sensor = _check_sensor(sensor)
     product_level = _check_product_level(product_level, product=None)
-    channels = _check_channels(channels, sensor=sensor)
-    # scene_abbr = _check_scene_abbr(scene_abbr, sensor=sensor)
+    channels = _check_channels(channels)
+    scene_abbr = _check_scene_abbr(scene_abbr)
     start_time, end_time = _check_start_end_time(start_time, end_time)
     fpaths = _filter_files(
         fpaths=fpaths,
-        sensor=sensor,
         product_level=product_level,
         start_time=start_time,
         end_time=end_time,
-        scan_modes=scan_modes,
         channels=channels,
         scene_abbr=scene_abbr,
     )
@@ -1149,24 +1061,25 @@ def filter_files(
 #### Search files
 def _get_acquisition_max_timedelta(sector):
     """Get reasonable timedelta based on AHI sector to find previous/next acquisition."""
-    if sector == "M":
-        dt = datetime.timedelta(minutes=1)
-    elif sector == "C":
-        dt = datetime.timedelta(minutes=5)
-    elif sector == "F":
-        dt = datetime.timedelta(minutes=15)  # to include all scan_mode options
-    else: # sector=None (all other sensors)  # TODO: might be improved ... 
-        dt = datetime.timedelta(minutes=15)
+    if sector == "Target":
+       dt = datetime.timedelta(minutes=2, seconds=30)     
+    elif sector == "Japan":
+        dt = datetime.timedelta(minutes=2, seconds=30)    
+    elif sector == "FLDK":
+        dt = datetime.timedelta(minutes=10)   
+    elif sector == "Landmark": 
+        dt = datetime.timedelta(seconds=30)    
+    else:
+        raise ValueError("Unknown sector.")
     return dt
 
 
-def _group_fpaths_by_key(fpaths, sensor=None, product_level=None, key="start_time"):
-    """Utils function to group filepaths by key contained into filename."""
-    # TODO: sensor and product_level args could be removed 
+
+
+def _group_fpaths_by_key(fpaths, product_level=None, key="start_time"):
+    """Utils function to group filepaths by key contained into filename.""" 
     # - Retrieve key sorting index 
-    list_key_values = [
-        _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
-    ]
+    list_key_values = [_get_info_from_filepath(fpath)[key] for fpath in fpaths]
     idx_key_sorting = np.array(list_key_values).argsort()
     # - Sort fpaths and key_values by key values
     fpaths = np.array(fpaths)[idx_key_sorting]
@@ -1210,7 +1123,6 @@ def group_files(fpaths, key="start_time"):
 
 def find_files(
     satellite,
-    sensor,
     product_level,
     product,
     start_time,
@@ -1227,10 +1139,11 @@ def find_files(
     """
     Retrieve files from local or cloud bucket storage.
 
-    If you are querying mesoscale domain data (sector=M), you might be
+    If you are querying data from sector 'Japan', 'Target' or 'Landmark', you might be
       interested to specify in the filter_parameters dictionary the
-      key `scene_abbr` with values "M1" or "M2".
-
+      key `scene_abbr` with values "R1", "R2" (for Japan), "R3" (for Target") or  
+     "R4" and "R5" (for Landmark).
+      
     Parameters
     ----------
     base_dir : str
@@ -1247,9 +1160,6 @@ def find_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1265,7 +1175,7 @@ def find_files(
         See `himawari_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     group_by_key : str, optional
         Key by which to group the list of filepaths
@@ -1297,15 +1207,11 @@ def find_files(
     base_dir = _check_base_dir(base_dir)
     connection_type = _check_connection_type(connection_type, protocol)
     satellite = _check_satellite(satellite)
-    sensor = _check_sensor(sensor)
     product_level = _check_product_level(product_level, product=None)
-    product = _check_product(product, sensor=sensor, product_level=product_level)
-    sector = _check_sector(sector, product=product, sensor=sensor)
-    start_time, end_time = _check_start_end_time(start_time, end_time)
-
-    # filter_parameters = _check_filter_parameters(                             # No such function
-    #     filter_parameters, sensor, sector=sector
-    # )
+    product = _check_product(product, product_level=product_level)
+    sector = _check_sector(sector, product=product)  
+    start_time, end_time = _check_start_end_time(start_time, end_time) 
+    filter_parameters = _check_filter_parameters(filter_parameters, sector=sector)
     group_by_key = _check_group_by_key(group_by_key)
 
     # Add start_time and end_time to filter_parameters
@@ -1323,29 +1229,26 @@ def find_files(
         protocol=protocol,
         base_dir=base_dir,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
     )
 
-    # Define time directories
-    start_year, start_doy, start_hour = _dt_to_year_doy_hour(start_time)
-    end_year, end_doy, end_hour = _dt_to_year_doy_hour(end_time)
-    list_hourly_times = pd.date_range(start_time, end_time, freq="1h")
-    list_year_doy_hour = [_dt_to_year_doy_hour(dt) for dt in list_hourly_times]
-    list_year_doy_hour = ["/".join(tpl) for tpl in list_year_doy_hour]
+    # Define time directories 
+    # <YYYY>/<MM>/<DD>/<HH00, HH10, HH20,...>)
+    list_hourly_times = pd.date_range(start_time, end_time, freq="10min")
+    # list_hourly_times = pd.date_range(start_time, end_time+datetime.timedelta(minutes=10), freq="10min")
+    list_time_dir_tree = ["/".join(_dt_to_year_month_day_hhmm(dt)) for dt in list_hourly_times]
 
-    # Define glob patterns
-    list_glob_pattern = [
-        os.path.join(product_dir, dt_str, "*.nc*") for dt_str in list_year_doy_hour
-    ]
+    # Define glob patterns 
+    fname_glob_pattern = get_fname_glob_pattern(product_level=product_level)
+    list_glob_pattern = [os.path.join(product_dir, time_dir_tree, fname_glob_pattern) for time_dir_tree in list_time_dir_tree]
     n_directories = len(list_glob_pattern)
     if verbose:
         print(f"Searching files across {n_directories} directories.")
 
     # Loop over each directory:
-    # - TODO in parallel ?
+    # - TODO in parallel 
     list_fpaths = []
     # glob_pattern = list_glob_pattern[0]
     for glob_pattern in list_glob_pattern:
@@ -1355,14 +1258,15 @@ def find_files(
         fpaths = [bucket_prefix + fpath for fpath in fpaths]
         # Filter files if necessary
         if len(filter_parameters) >= 1:
-            fpaths = _filter_files(fpaths, sensor, product_level, **filter_parameters)
+            fpaths = _filter_files(fpaths, product_level, **filter_parameters)  
         list_fpaths += fpaths
 
     fpaths = list_fpaths
 
     # Group fpaths by key
     if group_by_key:
-        fpaths = _group_fpaths_by_key(fpaths, sensor, product_level, key=group_by_key)
+        fpaths = _group_fpaths_by_key(fpaths, product_level, key=group_by_key)  
+        
     # Parse fpaths for connection type
     fpaths = _set_connection_type(
         fpaths, satellite=satellite, protocol=protocol, connection_type=connection_type
@@ -1374,7 +1278,6 @@ def find_files(
 def find_closest_start_time(
     time,
     satellite,
-    sensor,
     product_level,
     product,
     sector=None, 
@@ -1404,9 +1307,6 @@ def find_closest_start_time(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1418,7 +1318,7 @@ def find_closest_start_time(
         See `himawari_api.available_sectors()` for a list of available sectors.
     filter_parameters: dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     """
     # Set time precision to minutes
@@ -1435,7 +1335,6 @@ def find_closest_start_time(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1459,7 +1358,6 @@ def find_closest_start_time(
 
 def find_latest_start_time(
     satellite,
-    sensor,
     product_level,
     product,
     sector=None, 
@@ -1492,9 +1390,6 @@ def find_latest_start_time(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1506,7 +1401,7 @@ def find_latest_start_time(
         See `himawari_api.available_sectors()` for a list of available sectors.
     filter_parameters: dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     """
     # Search in the past N hour of data
@@ -1519,7 +1414,6 @@ def find_latest_start_time(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1542,7 +1436,6 @@ def find_latest_start_time(
 def find_closest_files(
     time,
     satellite,
-    sensor,
     product_level,
     product,
     sector=None, 
@@ -1575,9 +1468,6 @@ def find_closest_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1591,7 +1481,7 @@ def find_closest_files(
         The time for which you desire to retrieve the files with closest start_time.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     connection_type : str, optional
         The type of connection to a cloud bucket.
@@ -1613,7 +1503,6 @@ def find_closest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1637,7 +1526,6 @@ def find_closest_files(
 
 def find_latest_files(
     satellite,
-    sensor,
     product_level,
     product,
     sector=None, 
@@ -1685,9 +1573,6 @@ def find_latest_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1699,7 +1584,7 @@ def find_latest_files(
         See `himawari_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     connection_type : str, optional
         The type of connection to a cloud bucket.
@@ -1714,7 +1599,6 @@ def find_latest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1730,7 +1614,6 @@ def find_latest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1744,7 +1627,6 @@ def find_previous_files(
     start_time,
     N,
     satellite,
-    sensor,
     product_level,
     product,
     sector=None, 
@@ -1790,9 +1672,6 @@ def find_previous_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1804,7 +1683,7 @@ def find_previous_files(
         See `himawari_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     connection_type : str, optional
         The type of connection to a cloud bucket.
@@ -1817,8 +1696,7 @@ def find_previous_files(
         Dictionary with structure {<datetime>: [fpaths]}
 
     """
-    sensor = _check_sensor(sensor)
-    sector = _check_sector(sector, sensor=sensor)
+    sector = _check_sector(sector)
     product_level = _check_product_level(product_level)
     # Set time precision to minutes
     start_time = _check_time(start_time)
@@ -1830,7 +1708,6 @@ def find_previous_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1853,7 +1730,6 @@ def find_previous_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -1884,16 +1760,11 @@ def find_previous_files(
     # ----------------------------------------------------------
     # Perform consistency checks
     if check_consistency:
-        # Check constant scan_mode
-        # _check_unique_scan_mode(fpath_dict, sensor, product_level)            # There's only one scan mode
         # Check for interval regularity
         if not include_start_time: 
             list_datetime = list_datetime + [closest_time]
         _check_interval_regularity(list_datetime)
-        # TODO Check for Mesoscale same location (on M1 and M2 separately) !
-        # - raise information when it changes !
-        # if sector == "M":
-        #     pass
+
     # ----------------------------------------------------------
     # Return files dictionary
     return fpath_dict
@@ -1903,7 +1774,6 @@ def find_next_files(
     start_time,
     N,
     satellite,
-    sensor,
     product_level,
     product,
     sector=None, 
@@ -1949,9 +1819,6 @@ def find_next_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -1976,8 +1843,7 @@ def find_next_files(
         Dictionary with structure {<datetime>: [fpaths]}
 
     """
-    sensor = _check_sensor(sensor)
-    sector = _check_sector(sector, sensor=sensor)
+    sector = _check_sector(sector)
     product_level = _check_product_level(product_level)
     # Set time precision to minutes
     start_time = _check_time(start_time)
@@ -1989,7 +1855,6 @@ def find_next_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -2012,7 +1877,6 @@ def find_next_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -2042,16 +1906,11 @@ def find_next_files(
     # ----------------------------------------------------------
     # Perform consistency checks
     if check_consistency:
-        # Check constant scan_mode                                              # There's only one scan mode 
-        # _check_unique_scan_mode(fpath_dict, sensor, product_level)
         # Check for interval regularity
         if not include_start_time: 
             list_datetime = list_datetime + [closest_time]
         _check_interval_regularity(list_datetime)
-        # TODO Check for Mesoscale same location (on M1 and M2 separately) !
-        # - raise information when it changes !
-        if sector == "M":
-            pass
+
     # ----------------------------------------------------------
     # Return files dictionary
     return fpath_dict

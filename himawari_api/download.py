@@ -172,7 +172,6 @@ def download_files(
     base_dir,
     protocol,
     satellite,
-    sensor,
     product_level,
     product,
     sector,
@@ -204,9 +203,6 @@ def download_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -273,7 +269,6 @@ def download_files(
             protocol=protocol,
             fs_args=fs_args,
             satellite=satellite,
-            sensor=sensor,
             product_level=product_level,
             product=product,
             sector=sector,
@@ -371,7 +366,6 @@ def download_closest_files(
     base_dir,
     protocol,
     satellite,
-    sensor,
     product_level,
     product,
     time,
@@ -404,9 +398,6 @@ def download_closest_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -448,7 +439,6 @@ def download_closest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -460,7 +450,6 @@ def download_closest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -480,7 +469,6 @@ def download_latest_files(
     base_dir,
     protocol,
     satellite,
-    sensor,
     product_level,
     product,
     sector=None,
@@ -525,9 +513,6 @@ def download_latest_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -569,7 +554,6 @@ def download_latest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -585,7 +569,6 @@ def download_latest_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -602,7 +585,6 @@ def download_previous_files(
     base_dir,
     protocol,
     satellite,
-    sensor,
     product_level,
     product,
     start_time,
@@ -652,9 +634,6 @@ def download_previous_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -699,7 +678,6 @@ def download_previous_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -716,7 +694,6 @@ def download_previous_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -737,7 +714,6 @@ def download_next_files(
     base_dir,
     protocol,
     satellite,
-    sensor,
     product_level,
     product,
     start_time,
@@ -787,9 +763,6 @@ def download_next_files(
     satellite : str
         The name of the satellite.
         Use `himawari_api.available_satellites()` to retrieve the available satellites.
-    sensor : str
-        Satellite sensor.
-        See `himawari_api.available_sensors()` for available sensors.
     product_level : str
         Product level.
         See `himawari_api.available_product_levels()` for available product levels.
@@ -834,7 +807,6 @@ def download_next_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,
@@ -850,7 +822,6 @@ def download_next_files(
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
-        sensor=sensor,
         product_level=product_level,
         product=product,
         sector=sector,

@@ -15,14 +15,23 @@
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 import datetime
+import numpy as np 
 import pandas as pd
 
 
-def _dt_to_year_doy_hour(dt):
-    year = dt.strftime("%Y")  # year
-    day_of_year = dt.strftime("%j")  # day of year in julian format
-    hour = dt.strftime("%H")  # 2-digit hour format
-    return year, day_of_year, hour
+def _dt_to_year_month_day_hhmm(dt):
+    year = dt.strftime("%Y")                # year
+    month = dt.strftime("%m").ljust(2,"0")  # month 
+    day = dt.strftime("%d").ljust(2,"0")    # day 
+    hour = dt.strftime("%H").ljust(2,"0")   # hh
+    minute = int(dt.strftime("%M"))
+    # Round minute down to nearest 10 multiplier 
+    # - 00, 10, 20, 30, 40, 50 
+    minute = int(np.floor(minute/ 10) * 10)
+    minute_str = str(minute).ljust(2,"0") 
+    # Define hhmm string 
+    hhmm = hour + minute_str    
+    return year, month, day, hhmm
 
 
 def get_end_of_day(time):
