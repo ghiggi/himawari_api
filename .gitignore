@@ -1,0 +1,13 @@
+
+himawari_api/__pycache__/__init__.cpython-310.pyc
+himawari_api/__pycache__/__init__.cpython-39.pyc
+himawari_api/__pycache__/download.cpython-310.pyc
+himawari_api/__pycache__/download.cpython-39.pyc
+himawari_api/__pycache__/explore.cpython-310.pyc
+himawari_api/__pycache__/explore.cpython-39.pyc
+himawari_api/__pycache__/io.cpython-310.pyc
+himawari_api/__pycache__/io.cpython-39.pyc
+himawari_api/__pycache__/listing.cpython-310.pyc
+himawari_api/__pycache__/listing.cpython-39.pyc
+*.pyc
+*.pyc

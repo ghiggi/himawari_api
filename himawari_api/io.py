@@ -279,6 +279,24 @@ def _check_time(time):
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
     return time
 
+def _correct_time_seconds(time):
+    '''Round seconds to 00 or 30,
+    If [0-15] --> 00 
+    If [15-45] --> 30 
+    If [45-59] --> 0 (and add 1 minute)'''
+    
+    if time.second > 45:
+        time.second = 0
+        time.minute = time.minute+1
+    elif (time.second < 45) and (time.second > 15):
+        time.second = 30
+    elif time.second < 15:
+        time.second = 0
+    
+    return time
+    
+    
+
 
 def _check_start_end_time(start_time, end_time, res=None):
     """Check start_time and end_time validity."""
@@ -290,24 +308,13 @@ def _check_start_end_time(start_time, end_time, res=None):
     start_time = start_time.replace(microsecond=0)
     end_time = end_time.replace(microsecond=0)
    
-    # Round seconds to 00 or 30 
-    # TODO @Leo in a separate function
-    # If [0-15] --> 00 
-    # If [15-45] --> 30 
-    # If [45-59] --> 0 (and add 1 minute)
-    
-    # for time in [start_time, end_time]:      
-    #     # if resolution is set to half-minute, replace time values
-    #     if res == 0.5:       
-    #         if time.second > 45:
-    #             time.second = 0
-    #             time.minute = time.minute+1
-    #         elif (time.second < 45) and (time.second > 15):
-    #             time.second = 30
-    #         elif time.second < 15:
-    #             time.second = 0
-    #     else: 
-    #         time.second = 0
+    # Round seconds to 00 (or 30 if resolution is set at 0.5)
+    if res == 0.5:
+        for time in [start_time, end_time]:
+            time = _correct_time_seconds(time)
+    else:
+        for time in [start_time, end_time]:
+            time = time.replace(second=0)
     
     # Check start_time and end_time are chronological
     if start_time > end_time:

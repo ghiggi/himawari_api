@@ -53,7 +53,7 @@ filter_parameters["scene_abbr"] = scene_abbr
 
 # - Target Area Example
 sector = "Target"
-scene_abbr = None   
+scene_abbr = None
 channels = None  # select all channels
 channels = ["C01"]  # select channels subset
 filter_parameters = {}

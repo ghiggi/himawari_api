@@ -16,7 +16,7 @@ from himawari_api import (
 
 ###---------------------------------------------------------------------------.
 #### Define protocol and local directory
-base_dir = "/tmp/"
+base_dir = "/Users/_sourd/Desktop/ahoy/"
 
 protocol = "gcs"
 protocol = "s3"
@@ -33,13 +33,13 @@ product = "Rad"
 start_time = datetime.datetime(2021, 11, 17, 11, 30)
 end_time = datetime.datetime(2021, 11, 17, 11, 40)
 
-sector = "Japan"
-scene_abbr = ["R1"]  # None download and find both locations
+sector = "FLDK"
+#scene_abbr = ["R1"]  # None download and find both locations
 channels = None  # select all channels
-channels = ["C01", "C02"]  # select channels subset
+channels = ["B04", "B05"]  # select channels subset
 filter_parameters = {}
 filter_parameters["channels"] = channels
-filter_parameters["scene_abbr"] = scene_abbr
+#filter_parameters["scene_abbr"] = scene_abbr
 
 ####---------------------------------------------------------------------------.
 #### Download files between start_time and end_time
