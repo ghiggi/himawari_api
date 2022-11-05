@@ -31,8 +31,14 @@ def get_channels_from_wavelengths(scn, wavelengths):
     dependency_tree = scn._dependency_tree
     list_names = []
     for band in wavelengths:
-        dict_dataset_ids = dependency_tree._find_matching_ids_in_readers(band)
+        if isinstance(band, float):
+            dict_dataset_ids = dependency_tree._find_matching_ids_in_readers(band)
+        else:
+            dict_dataset_ids = dependency_tree._find_matching_ids_in_readers(band.get("wavelength"))
+               
         for reader, data_ids in dict_dataset_ids.items():  # TODO: here I assume is only 1 reader
+            if not data_ids: 
+                raise ValueError(f"Required wavelength {band} does not match with available channels")
             channel = np.unique([data_id['name']
                                 for data_id in data_ids]).tolist()
             list_names += channel
@@ -56,13 +62,16 @@ def _get_required_channels(scn, dataset):
 
     # Convert wavelength to names if it is the case
     
-   # if isinstance(prerequisites[0].get("wavelength"), float): # TODO : catch wavelengths
+    # TODO : catch wavelengths
+    #print(prerequisites)
     
-    try: 
-        prerequisites[0].get("wavelength")
-        prerequisites = get_channels_from_wavelengths(scn, prerequisites)
-    except: pass
-    # Get valid channel names
+    try:
+        if isinstance(prerequisites[0].get("wavelength"), float):
+            prerequisites = get_channels_from_wavelengths(scn, prerequisites)
+    except: 
+        if isinstance(prerequisites[0], float):
+            prerequisites = get_channels_from_wavelengths(scn, prerequisites)
+    
     list_valid_channels = scn.all_dataset_names()
     # Retrive required channels
     list_channels = []
