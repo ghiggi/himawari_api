@@ -15,13 +15,42 @@
 # You should have received a copy of the GNU General Public License along with
 # himawari_api. If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 from himawari_api.checks import (
      _check_channels,
      _check_scene_abbr,
      _check_start_end_time,
      _check_product_level,
 )
-from himawari_api.info import _get_info_from_filepath
+from himawari_api.info import _get_info_from_filepath, get_key_from_filepaths, group_files
+
+
+def _drop_duplicate_radiance_files(fpaths):
+    """Ensure that the AHI L1b Rad files have per channel same resolution."""
+    # Group by timesteps 
+    fpaths_dict = group_files(fpaths, key="start_time")
+    # Loop over each timestep 
+    list_fpaths = []
+    for tmp_fpaths in fpaths_dict.values():
+        fpaths_channel_dict = group_files(tmp_fpaths, key="channel")
+        # Loop over each channel
+        for ch_fpaths in fpaths_channel_dict.values():
+            # Get available resolutions
+            resolutions = np.array(get_key_from_filepaths(ch_fpaths, "spatial_res"))
+            # If single resolution, append to filepath list 
+            if len(np.unique(resolutions) == 1) == 1: 
+                # Append to valid filepath list 
+                list_fpaths += ch_fpaths
+            else:
+                # Select file with highest resolution 
+                highest_resolution = np.min(resolutions)
+                ch_fpaths = np.array(ch_fpaths)
+                ch_fpaths = ch_fpaths[resolutions == highest_resolution]
+                ch_fpaths = ch_fpaths.tolist()
+                # Append to valid filepath list 
+                list_fpaths += ch_fpaths
+    
+    return list_fpaths  
 
 
 def _filter_file(
@@ -109,6 +138,12 @@ def _filter_files(
         for fpath in fpaths
     ]
     fpaths = [fpath for fpath in fpaths if fpath is not None]
+    
+    # Special treatment for AHI L1b Rad data 
+    # - Multiple resolutions per band might be present on the bucket
+    if product == "Rad" and product_level == "L1b":
+        fpaths = _drop_duplicate_radiance_files(fpaths)
+        
     return fpaths
 
 
