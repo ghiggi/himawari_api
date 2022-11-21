@@ -7,14 +7,16 @@ Created on Wed Sep  7 14:48:54 2022
 """
 import dask
 import satpy
-import fsspec
+#import fsspec
 import datetime
 import numpy as np
 from satpy import Scene, MultiScene
-from satpy.readers import FSFile
+#from satpy.readers import FSFile
 from dask.diagnostics import ProgressBar
-from goes_api import download_files, find_files
+#from goes_api import download_files, find_files
 from dask.distributed import Client
+
+from himawari_api import download_files, find_files
 
 client = Client(processes=True)
 # ---------------------------------------------------------------------------.
@@ -29,8 +31,14 @@ def get_channels_from_wavelengths(scn, wavelengths):
     dependency_tree = scn._dependency_tree
     list_names = []
     for band in wavelengths:
-        dict_dataset_ids = dependency_tree._find_matching_ids_in_readers(band)
+        if isinstance(band, float):
+            dict_dataset_ids = dependency_tree._find_matching_ids_in_readers(band)
+        else:
+            dict_dataset_ids = dependency_tree._find_matching_ids_in_readers(band.get("wavelength"))
+               
         for reader, data_ids in dict_dataset_ids.items():  # TODO: here I assume is only 1 reader
+            if not data_ids: 
+                raise ValueError(f"Required wavelength {band} does not match with available channels")
             channel = np.unique([data_id['name']
                                 for data_id in data_ids]).tolist()
             list_names += channel
@@ -53,9 +61,17 @@ def _get_required_channels(scn, dataset):
     # - satpy.node.ReaderNode (when dataset is a channel)
 
     # Convert wavelength to names if it is the case
-    if isinstance(prerequisites[0], float):
-        prerequisites = get_channels_from_wavelengths(scn, prerequisites)
-    # Get valid channel names
+    
+    # TODO : catch wavelengths
+    #print(prerequisites)
+    
+    try:
+        if isinstance(prerequisites[0].get("wavelength"), float):
+            prerequisites = get_channels_from_wavelengths(scn, prerequisites)
+    except: 
+        if isinstance(prerequisites[0], float):
+            prerequisites = get_channels_from_wavelengths(scn, prerequisites)
+    
     list_valid_channels = scn.all_dataset_names()
     # Retrive required channels
     list_channels = []
@@ -101,34 +117,39 @@ def get_required_channels(scn, datasets):
 # Define protocol
 base_dir = None
 
-protocol = "gcs"
+#protocol = "gcs"
 protocol = "s3"
 fs_args = {}
 
 # ---------------------------------------------------------------------------.
 # Define satellite, sensor, product_level and product
-satellite = "GOES-16"
-sensor = "ABI"
-product_level = "L1B"
+# satellite = "GOES-16"
+# sensor = "ABI"
+# product_level = "L1B"
+# product = "Rad"
+
+satellite = "HIMAWARI-8"
+#sensor = "AHI"
+product_level = "L1b"
 product = "Rad"
 
 # ---------------------------------------------------------------------------.
 # Define time window, sector and filtering options
-start_time = datetime.datetime(2017, 6, 28, 18, 0)
-end_time = datetime.datetime(2017, 6, 29, 1, 0)
-sector = "F"
+start_time = datetime.datetime(2020, 2, 20, 18, 30)
+end_time = datetime.datetime(2020, 2, 20, 19, 0)
+sector = "FLDK"
 scan_modes = None  # select all scan modes (M3, M4, M6)
 scene_abbr = None  # M1 or M2
 # select channels for True Color generation
 channels = ["C01", "C02", "C03", "C05", "C13", "C14"]
 filter_parameters = {}
-filter_parameters["scan_modes"] = scan_modes
+#filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
-filter_parameters["scene_abbr"] = scene_abbr
+#filter_parameters["scene_abbr"] = scene_abbr
 
 # ---------------------------------------------------------------------------.
 # Download files
-base_dir = "/home/ghiggi/GEO"
+base_dir = "/Users/_sourd/Documents/EPFL/MA3/Projet_SIE/H8"
 n_threads = 20  # n_parallel downloads
 force_download = False  # whether to overwrite existing data on disk
 
@@ -137,7 +158,6 @@ l_fpaths = download_files(
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -156,7 +176,6 @@ l_fpaths = download_files(
 fpaths = find_files(
     base_dir=base_dir,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -172,7 +191,6 @@ assert fpaths == l_fpaths
 fpaths_dict = find_files(
     base_dir=base_dir,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
@@ -230,7 +248,7 @@ def _delayed_scene(fpaths, reader, datasets, ll_bbox=None):
 
 scn_dict = {}
 for timestep, fpaths in fpaths_dict.items():
-    scn_dict[timestep] = _delayed_scene(fpaths, reader="abi_l1b",
+    scn_dict[timestep] = _delayed_scene(fpaths, reader="ahi_hsd",
                                         datasets=composites,
                                         ll_bbox=ll_bbox)
 
@@ -249,9 +267,9 @@ mscn.loaded_dataset_ids
 
 # - Create the animation
 with ProgressBar():
-    mscn.save_animation("/tmp/{name}_{start_time:%Y%m%d_%H%M%S}.mp4",
+    mscn.save_animation("/Users/_sourd/Desktop/{name}_{start_time:%Y%m%d_%H%M%S}.mp4",
                         datasets=composites,
-                        fps=2,
+                        fps=5,
                         batch_size=4, client=client)
 
 # ---------------------------------------------------------------------------.

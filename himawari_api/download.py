@@ -357,6 +357,16 @@ def download_files(
             print(
                 "--------------------------------------------------------------------"
             )
+            
+    # Decompress bz2 files
+    # if decompress_files:
+    #     list_all_local_fpaths, _ = remove_compressed_files(list_all_local_fpaths)
+            
+        
+            
+            
+            
+        
 
     # Return list of local fpaths
     return list_all_local_fpaths
