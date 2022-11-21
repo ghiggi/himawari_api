@@ -5,11 +5,10 @@ Created on Wed Mar 23 18:17:58 2022
 
 @author: ghiggi
 """
+import datetime
 import subprocess
-import fsspec
+import himawari_api
 from satpy import Scene
-from satpy.readers import FSFile
-from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
 # Install satpy to execute this script
@@ -17,53 +16,67 @@ from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
 #### Define protocol
-base_dir = None
-
-protocol = "gcs"
+base_dir = "/tmp/"
 protocol = "s3"
 fs_args = {}
 
 ###---------------------------------------------------------------------------.
 #### Define satellite, sensor, product_level and product
-satellite = "GOES-16"
-sensor = "ABI"
+satellite = "HIMAWARI-8"
 product_level = "L1B"
 product = "Rad"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
-sector = "M"
-scene_abbr = ["M1"]  # None download and find both locations
-scan_modes = None  # select all scan modes (M3, M4, M6)
-channels = None  # select all channels
+start_time = datetime.datetime(2021, 11, 17, 21, 30)
+end_time = datetime.datetime(2021, 11, 17, 21, 40)
+
+sector = "Target"
+scene_abbr = None   
+channels = None        # select all channels
 filter_parameters = {}
-filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
 ###---------------------------------------------------------------------------.
-#### Open files from s3 using ffspec + satpy
-fpaths_dict = find_latest_files(
+#### Download files 
+n_threads = 4
+force_download = True
+
+fpaths = himawari_api.download_files(
+    base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,
     satellite=satellite,
-    sensor=sensor,
     product_level=product_level,
     product=product,
     sector=sector,
+    start_time=start_time,
+    end_time=end_time,
     filter_parameters=filter_parameters,
-    connection_type="bucket",
+    n_threads=n_threads,
+    force_download=force_download,
+    check_data_integrity=True,
+    progress_bar=True,
+    verbose=True,
 )
+print(fpaths)
 
-# - Open files
-fpaths = list(fpaths_dict.values())[0]
-files = fsspec.open_files(fpaths, anon=True)
+# Group by timesteps
+fpaths_dict = himawari_api.group_files(fpaths, key="start_time")
+print(fpaths_dict)
 
-# - Define satpy FSFile
-satpy_files = [FSFile(file) for file in files]
+# Look at available timesteps
+list_timesteps = list(fpaths_dict.keys())
 
-# - Use satpy
-scn = Scene(filenames=satpy_files, reader="abi_l1b")
+# Select filepath for a single timestep 
+fpaths = fpaths_dict[list_timesteps[0]]
+ 
+###---------------------------------------------------------------------------.
+#### Open files with satpy
+scn = Scene(filenames=fpaths, reader="ahi_hsd")
+
+# - Get list of available channels 
 channels = scn.available_dataset_names()
 
 # - Load channels
@@ -77,5 +90,5 @@ new_scn.save_datasets(filename="/tmp/{name}.png")
 
 ###---------------------------------------------------------------------------.
 # Use the ImageMagick command montage to join all the images together
-cmd = "montage /tmp/C*.png -geometry 256x256 -background black /tmp/goes-imager_nc_mosaic.jpg"
+cmd = "montage /tmp/B*.png -geometry 256x256 -background black /tmp/ahi-imager_mosaic.jpg"
 subprocess.run(cmd, shell=True)

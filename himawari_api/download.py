@@ -22,8 +22,8 @@ import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
-from .utils.time import get_list_daily_time_blocks
-from .io import (
+from himawari_api.utils.time import get_list_daily_time_blocks
+from himawari_api.io import (
     get_filesystem,
     remove_bucket_address,
     find_files,

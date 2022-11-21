@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mar 30 17:23:36 2022
+Created on Mon Nov 21 17:55:13 2022
 
 @author: ghiggi
 """
@@ -22,7 +22,7 @@ fs_args = {}
 #### Define satellite, product_level and product
 satellite = "HIMAWARI-8"
 product_level = "L2"
-product = "RRQPE"      # RRQPE, CMSK, CPHS, CHGT
+product = "CMSK"       
 
 ###---------------------------------------------------------------------------.
 #### Define sector and time period 
@@ -77,24 +77,29 @@ print(ds.attrs["summary"])
 # - Dataset Variables 
 print(list(ds.data_vars))
 
-# - DQF values  
-# --> [0, 2, 3, 64, 66]
-pprint.pprint(ds['DQF'].attrs)
-np.unique(ds["DQF"].data[~np.isnan(ds["DQF"].data)], return_counts=True)  
+# - CloudMask values  
+pprint.pprint(ds['CloudMask'].attrs)
 
-# - RRPQPE values  
-pprint.pprint(ds['RRQPE'].attrs)
-np.unique(ds["RRQPE"].data[~np.isnan(ds["RRQPE"].data)], return_counts=True)  
+# - CloudMask Data Quality Flag  
+pprint.pprint(ds['CloudMaskQualFlag'].attrs)
 
-# - Plot RRQPE field
-da = ds['RRQPE'] 
-da = da.where(da > 0) # Mask with nan where <=0
-da.plot.imshow()
+# - Plot CloudMask  
+ds['CloudMask'].plot.imshow()
 plt.show()
  
-# - Plot DQF
-ds["DQF"].plot.imshow()
+# - Plot CloudProbability
+ds["CloudProbability"].plot.imshow()
 plt.show()
  
+# - Plot Smoke_Mask
+ds["Smoke_Mask"].plot.imshow()
+plt.show()
 
+# - Plot Smoke_Mask
+ds["Fire_Mask"].plot.imshow()
+plt.show()
+
+# - Plot Dust_Mask
+ds["Dust_Mask"].plot.imshow()
+plt.show()
 

@@ -16,6 +16,7 @@
 # himawari_api. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import time
 import fsspec
 import datetime
 import numpy as np
@@ -277,44 +278,38 @@ def _check_time(time):
             time = datetime.datetime.fromisoformat(time)
         except ValueError:
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
+    
+    # Set resolution to seconds
+    time = time.replace(microsecond=0)
+ 
+    # Round seconds to 00 / 30
+    time = _correct_time_seconds(time)
+
     return time
+
 
 def _correct_time_seconds(time):
-    '''Round seconds to 00 or 30,
+    """Round datetime seconds to 00 or 30
+    
     If [0-15] --> 00 
     If [15-45] --> 30 
-    If [45-59] --> 0 (and add 1 minute)'''
-    
+    If [45-59] --> 0 (and add 1 minute)
+    """
     if time.second > 45:
-        time.second = 0
-        time.minute = time.minute+1
-    elif (time.second < 45) and (time.second > 15):
-        time.second = 30
+        time = time.replace(second = 0) 
+        time = time + datetime.timedelta(minutes=1)
+    elif time.second > 15 and time.second < 45:
+        time = time.replace(second = 30) 
     elif time.second < 15:
-        time.second = 0
-    
+        time = time.replace(second = 0) 
     return time
-    
-    
 
 
-def _check_start_end_time(start_time, end_time, res=None):
+def _check_start_end_time(start_time, end_time):
     """Check start_time and end_time validity."""
     # Format input
     start_time = _check_time(start_time)
     end_time = _check_time(end_time)
-    
-    # Set resolution to seconds
-    start_time = start_time.replace(microsecond=0)
-    end_time = end_time.replace(microsecond=0)
-   
-    # Round seconds to 00 (or 30 if resolution is set at 0.5)
-    if res == 0.5:
-        for time in [start_time, end_time]:
-            time = _correct_time_seconds(time)
-    else:
-        for time in [start_time, end_time]:
-            time = time.replace(second=0)
     
     # Check start_time and end_time are chronological
     if start_time > end_time:
@@ -694,7 +689,7 @@ def get_fname_glob_pattern(product_level):
     if product_level == "L1b": 
         fname_pattern = "*.bz2*"
     else: # L2 
-        fname_pattern == "*.nc*"
+        fname_pattern = "*.nc*"
     return fname_pattern 
     
 
@@ -826,7 +821,7 @@ def _get_info_from_filename(fname):
     # Round start_time and end_time to minute resolution
     for time in ["start_time", "end_time", "production_time", "creation_time"]:
         try:
-            info_dict[time] = info_dict[time].replace(microsecond=0) # Removed second=0
+            info_dict[time] = _check_time(info_dict[time])
         except:
             None
     
@@ -844,13 +839,13 @@ def _get_info_from_filename(fname):
         if sector == "Japan" or (sector == "Target" and scene_abbr == "R3"): 
             start_time = info_dict["start_time"]
             start_time = start_time + (observation_number-1)*datetime.timedelta(minutes=2, seconds=30)
-            end_time = start_time + (observation_number)*datetime.timedelta(minutes=2, seconds=30)
+            end_time = start_time + datetime.timedelta(minutes=2, seconds=30)
             info_dict["start_time"] = start_time
             info_dict["end_time"] = end_time
         if sector == "Landmark" and scene_abbr in ["R4", "R5"]:
             start_time = info_dict["start_time"]
             start_time = start_time + (observation_number-1)*datetime.timedelta(seconds=30)
-            end_time = start_time + (observation_number)*datetime.timedelta(seconds=30)
+            end_time = start_time + datetime.timedelta(seconds=30)
             info_dict["start_time"] = start_time
             info_dict["end_time"] = end_time
             
@@ -936,6 +931,7 @@ def get_key_from_filepaths(fpaths, key):
 
 def _filter_file(
     fpath,
+    product,
     product_level,
     start_time=None,
     end_time=None,
@@ -966,11 +962,12 @@ def _filter_file(
     
     # Filter by start_time
     if start_time is not None:
-        # If the file ends before start_time, do not select
+        # If the file ends before (or at) start_time, do not select
         file_end_time = info_dict.get("end_time")
-        if file_end_time < start_time: 
+        if file_end_time <= start_time: 
             return None
-        # This would exclude a file with start_time within the file
+        
+        # This could exclude a file with 'start_time' within the file
         # if file_start_time < start_time:
         #     return None
 
@@ -978,16 +975,23 @@ def _filter_file(
     if end_time is not None:
         file_start_time = info_dict.get("start_time")
         # If the file starts after end_time, do not select
+        # If >= it excludes files with start_time == end_time ! 
         if file_start_time > end_time:
             return None
-        # This would exclude a file with end_time within the file
+        # This could exclude a file with end_time within the file
         # if file_end_time > end_time:
         #     return None
+        
+    # Filter by product 
+    if product != info_dict.get("product"):
+        return None 
+    
     return fpath
 
 
 def _filter_files(
     fpaths,
+    product, 
     product_level,
     start_time=None,
     end_time=None,
@@ -1000,6 +1004,7 @@ def _filter_files(
     fpaths = [
         _filter_file(
             fpath,
+            product, 
             product_level,
             start_time=start_time,
             end_time=end_time,
@@ -1014,6 +1019,7 @@ def _filter_files(
 
 def filter_files(
     fpaths,
+    product, 
     product_level,
     start_time=None,
     end_time=None,
@@ -1055,6 +1061,7 @@ def filter_files(
     start_time, end_time = _check_start_end_time(start_time, end_time)
     fpaths = _filter_files(
         fpaths=fpaths,
+        product=product, 
         product_level=product_level,
         start_time=start_time,
         end_time=end_time,
@@ -1209,6 +1216,7 @@ def find_files(
         else:
             protocol = "file"
             fs_args = {}
+   
     # Format inputs
     protocol = _check_protocol(protocol)
     base_dir = _check_base_dir(base_dir)
@@ -1243,9 +1251,11 @@ def find_files(
 
     # Define time directories 
     # <YYYY>/<MM>/<DD>/<HH00, HH10, HH20,...>)
-    list_hourly_times = pd.date_range(start_time, end_time, freq="10min")
-    # list_hourly_times = pd.date_range(start_time, end_time+datetime.timedelta(minutes=10), freq="10min")
-    list_time_dir_tree = ["/".join(_dt_to_year_month_day_hhmm(dt)) for dt in list_hourly_times]
+    # - start_time =  datetime.datetime(2022, 11, 21, 15, 27, 30)
+    # - end_time =  datetime.datetime(2022, 11, 21, 15, 27, 30)
+    # --> + timedelta is required to ensure correct list 
+    list_timesteps = pd.date_range(start_time, end_time + datetime.timedelta(minutes=10), freq="10min")
+    list_time_dir_tree = ["/".join(_dt_to_year_month_day_hhmm(dt)) for dt in list_timesteps]
 
     # Define glob patterns 
     fname_glob_pattern = get_fname_glob_pattern(product_level=product_level)
@@ -1265,7 +1275,7 @@ def find_files(
         fpaths = [bucket_prefix + fpath for fpath in fpaths]
         # Filter files if necessary
         if len(filter_parameters) >= 1:
-            fpaths = _filter_files(fpaths, product_level, **filter_parameters)  
+            fpaths = _filter_files(fpaths, product, product_level, **filter_parameters)  
         list_fpaths += fpaths
 
     fpaths = list_fpaths
@@ -1330,8 +1340,8 @@ def find_closest_start_time(
     """
     # Set time precision to minutes
     time = _check_time(time)
-    time = time.replace(microsecond=0, second=0)
     # Retrieve timedelta conditioned to sector (for AHI)
+    sector = _check_sector(sector)
     timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
     start_time = time - timedelta
@@ -1498,8 +1508,8 @@ def find_closest_files(
     """
     # Set time precision to minutes
     time = _check_time(time)
-    time = time.replace(microsecond=0, second=0)
     # Retrieve timedelta conditioned to sector type
+    sector = _check_sector(sector)
     timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
     start_time = time - timedelta
@@ -1600,18 +1610,25 @@ def find_latest_files(
 
     """
     # Get closest time
-    latest_time = find_latest_start_time(
-        look_ahead_minutes=look_ahead_minutes, 
-        base_dir=base_dir,
-        protocol=protocol,
-        fs_args=fs_args,
-        satellite=satellite,
-        product_level=product_level,
-        product=product,
-        sector=sector,
-        filter_parameters=filter_parameters,
-    )
-    
+    for i in range(10):
+        try:
+            latest_time = find_latest_start_time(
+                look_ahead_minutes=look_ahead_minutes, 
+                base_dir=base_dir,
+                protocol=protocol,
+                fs_args=fs_args,
+                satellite=satellite,
+                product_level=product_level,
+                product=product,
+                sector=sector,
+                filter_parameters=filter_parameters,
+            )
+            break
+        except: 
+            time.sleep(1)
+            if i == 9:
+                raise ValueError("Impossible to retrieve last timestep available.")
+
     fpath_dict = find_previous_files(
         N = N, 
         check_consistency=check_consistency,
@@ -1705,9 +1722,8 @@ def find_previous_files(
     """
     sector = _check_sector(sector)
     product_level = _check_product_level(product_level)
-    # Set time precision to minutes
+    # Set time precision to seconds
     start_time = _check_time(start_time)
-    start_time = start_time.replace(microsecond=0, second=0)
     # Get closest time and check is as start_time (otherwise warning)
     closest_time = find_closest_start_time(
         time=start_time,
@@ -1837,7 +1853,7 @@ def find_next_files(
         See `himawari_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
-        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        Valid keys includes: `channels`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
     connection_type : str, optional
         The type of connection to a cloud bucket.
@@ -1852,9 +1868,8 @@ def find_next_files(
     """
     sector = _check_sector(sector)
     product_level = _check_product_level(product_level)
-    # Set time precision to minutes
+    # Set time precision to seconds
     start_time = _check_time(start_time)
-    start_time = start_time.replace(microsecond=0, second=0)
     # Get closest time and check is as start_time (otherwise warning)
     closest_time = find_closest_start_time(
         time=start_time,

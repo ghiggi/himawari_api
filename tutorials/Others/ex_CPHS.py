@@ -22,7 +22,7 @@ fs_args = {}
 #### Define satellite, product_level and product
 satellite = "HIMAWARI-8"
 product_level = "L2"
-product = "RRQPE"      # RRQPE, CMSK, CPHS, CHGT
+product = "CPHS"   
 
 ###---------------------------------------------------------------------------.
 #### Define sector and time period 
@@ -77,24 +77,17 @@ print(ds.attrs["summary"])
 # - Dataset Variables 
 print(list(ds.data_vars))
 
-# - DQF values  
-# --> [0, 2, 3, 64, 66]
-pprint.pprint(ds['DQF'].attrs)
-np.unique(ds["DQF"].data[~np.isnan(ds["DQF"].data)], return_counts=True)  
+# - Plot Cloud Phase 
+# --> 5 phases
+ds['CloudPhase'].plot.imshow()
+plt.show()
 
-# - RRPQPE values  
-pprint.pprint(ds['RRQPE'].attrs)
-np.unique(ds["RRQPE"].data[~np.isnan(ds["RRQPE"].data)], return_counts=True)  
-
-# - Plot RRQPE field
-da = ds['RRQPE'] 
-da = da.where(da > 0) # Mask with nan where <=0
-da.plot.imshow()
+# - Plot Cloud Type
+# --> 8 classes
+ds['CloudType'].plot.imshow()
 plt.show()
  
-# - Plot DQF
-ds["DQF"].plot.imshow()
-plt.show()
+ 
  
 
 

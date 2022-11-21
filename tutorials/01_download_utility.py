@@ -16,9 +16,8 @@ from himawari_api import (
 
 ###---------------------------------------------------------------------------.
 #### Define protocol and local directory
-base_dir = "/Users/_sourd/Desktop/ahoy/"
+base_dir = "/tmp/"
 
-protocol = "gcs"
 protocol = "s3"
 fs_args = {}
 
@@ -33,13 +32,13 @@ product = "Rad"
 start_time = datetime.datetime(2021, 11, 17, 11, 30)
 end_time = datetime.datetime(2021, 11, 17, 11, 40)
 
-sector = "FLDK"
-#scene_abbr = ["R1"]  # None download and find both locations
-channels = None  # select all channels
+sector = "Target"
+scene_abbr = None  # None download and find both locations
+channels = None    # select all channels
 channels = ["B04", "B05"]  # select channels subset
 filter_parameters = {}
 filter_parameters["channels"] = channels
-#filter_parameters["scene_abbr"] = scene_abbr
+filter_parameters["scene_abbr"] = scene_abbr
 
 ####---------------------------------------------------------------------------.
 #### Download files between start_time and end_time
@@ -78,6 +77,7 @@ start_time = find_closest_start_time(
     protocol="s3",
     filter_parameters=filter_parameters,
 )
+
 # 2. Define retrieval settings
 N = 5
 include_start_time = False
@@ -155,13 +155,5 @@ fpaths = download_latest_files(
 )
 print(fpaths)
 assert len(fpaths) == N
-
-####---------------------------------------------------------------------------.
-# Visualize mesoscale image
-import xarray as xr
-
-fpath = list(fpaths.values())[0][0]
-ds = xr.open_dataset(fpath)
-ds["Rad"].plot.imshow()
 
 ####---------------------------------------------------------------------------.

@@ -44,8 +44,16 @@ end_time = datetime.datetime(2021, 11, 17, 11, 40)
 
 # - Full Disc Example
 sector = "F"
-scene_abbr = None  # DO NOT SPECIFY FOR FULL DISC SECTOR
-channels = None  # select all channels
+scene_abbr = None   # do not specify for Full Disc 
+channels = None     # select all channels
+channels = ["C01"]  # select channels subset
+filter_parameters = {}
+filter_parameters["channels"] = channels
+filter_parameters["scene_abbr"] = scene_abbr
+
+sector = "Japan"
+scene_abbr = None   # do not specify for Japan 
+channels = None     # select all channels
 channels = ["C01"]  # select channels subset
 filter_parameters = {}
 filter_parameters["channels"] = channels
@@ -54,7 +62,7 @@ filter_parameters["scene_abbr"] = scene_abbr
 # - Target Area Example
 sector = "Target"
 scene_abbr = None
-channels = None  # select all channels
+channels = None     # select all channels
 channels = ["C01"]  # select channels subset
 filter_parameters = {}
 filter_parameters["channels"] = channels
@@ -124,7 +132,7 @@ print(fpath_dict)
 #### Retrieve filepaths from cloud buckets
 himawari_api.available_connection_types()
 
-# Bucket url
+# s3 bucket url
 fpaths = find_files(
     protocol=protocol,
     fs_args=fs_args,

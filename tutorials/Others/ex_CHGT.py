@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Mon Nov 21 17:56:40 2022
+
+@author: ghiggi
+"""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Mar 30 17:23:36 2022
 
 @author: ghiggi
@@ -22,7 +29,7 @@ fs_args = {}
 #### Define satellite, product_level and product
 satellite = "HIMAWARI-8"
 product_level = "L2"
-product = "RRQPE"      # RRQPE, CMSK, CPHS, CHGT
+product = "CHGT"      
 
 ###---------------------------------------------------------------------------.
 #### Define sector and time period 
@@ -77,24 +84,23 @@ print(ds.attrs["summary"])
 # - Dataset Variables 
 print(list(ds.data_vars))
 
-# - DQF values  
-# --> [0, 2, 3, 64, 66]
-pprint.pprint(ds['DQF'].attrs)
-np.unique(ds["DQF"].data[~np.isnan(ds["DQF"].data)], return_counts=True)  
 
-# - RRPQPE values  
-pprint.pprint(ds['RRQPE'].attrs)
-np.unique(ds["RRQPE"].data[~np.isnan(ds["RRQPE"].data)], return_counts=True)  
-
-# - Plot RRQPE field
-da = ds['RRQPE'] 
-da = da.where(da > 0) # Mask with nan where <=0
-da.plot.imshow()
+# - Cloud Top Temperature
+ds['CldTopTemp'].plot.imshow()
 plt.show()
- 
-# - Plot DQF
-ds["DQF"].plot.imshow()
+
+# - Cloud Top Pressure
+ds['CldTopPres'].plot.imshow()
 plt.show()
- 
 
+# - Cloud Top Height
+ds['CldTopHght'].plot.imshow()
+plt.show()
 
+# - Cloud Top Emissivity
+ds['CldTopEmss'].plot.imshow()
+plt.show()
+
+# - Cloud Optical Depth
+ds['CldOptDpth'].plot.imshow()
+plt.show()
