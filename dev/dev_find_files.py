@@ -33,8 +33,8 @@ product = "Rad"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
-start_time = datetime.datetime(2021, 11, 17, 11, 30)
-end_time = datetime.datetime(2021, 11, 17, 11, 50)
+start_time = datetime.datetime(2017, 3, 3, 0, 20)
+end_time = datetime.datetime(2017, 3, 3, 0, 30)
 
 sector = "Japan" # "F"          
 scene_abbr = None          # "R1"   

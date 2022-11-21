@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 21 17:16:34 2022
 
-@author: ghiggi
-"""
+# Copyright (c) 2022 Ghiggi Gionata
+
+# himawari_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# himawari_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# himawari_api. If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 import himawari_api
 from satpy import Scene
@@ -41,7 +51,7 @@ filter_parameters["scene_abbr"] = scene_abbr
 ###---------------------------------------------------------------------------.
 #### Download files 
 n_threads = 4
-force_download = True
+force_download = False
 
 fpaths = himawari_api.download_files(
     base_dir=base_dir,

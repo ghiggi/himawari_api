@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Mar 24 11:36:43 2022
 
-@author: ghiggi
-"""
-from .io import get_key_from_filepaths
+# Copyright (c) 2022 Ghiggi Gionata
+
+# himawari_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# himawari_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# himawari_api. If not, see <http://www.gnu.org/licenses/>.
+"""Wrappers to extract information from filepaths."""
+
+from .info import get_key_from_filepaths
 
 
 def product_level(fpaths):
@@ -38,9 +49,6 @@ def end_time(fpaths):
 
 def satellite(fpaths):
     return get_key_from_filepaths(fpaths, key="satellite")
-
- 
-
 
 
 

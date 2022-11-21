@@ -13,14 +13,14 @@
 # A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along with
-# goes_api. If not, see <http://www.gnu.org/licenses/>.
+# himawari_api. If not, see <http://www.gnu.org/licenses/>.
+"""Define himawari_api exploratory and documentation tools."""
 
 import os
 import webbrowser
-from .io import (
+from .checks import (
     _check_satellite,
     _check_channel,
-    _check_product,
 )
 
 
@@ -30,7 +30,7 @@ def open_directory_explorer(satellite, protocol=None, base_dir=None):
     Parameters
     ----------
     base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
+        Base directory path where the <HIMAWARI-**> satellite is located.
         This argument must be specified only if wanting to explore the local storage.
         If it is specified, protocol and fs_args arguments must not be specified.
     protocol : str
@@ -47,12 +47,10 @@ def open_directory_explorer(satellite, protocol=None, base_dir=None):
     elif base_dir is not None:
         webbrowser.open(os.path.join(base_dir, satellite))
     else:
-        raise NotImplementedError(
-            "Current available protocols are 'gcs', 's3', 'local'."
-        )
+        raise NotImplementedError("Current available protocols are 's3' and 'local'.")
 
 
-def open_AHI_channel_guide(channel):
+def open_ahi_channel_guide(channel):
     """Open AHI QuickGuide of the channel.
 
     See `himawari_api.available_channels()` for available AHI channels.
@@ -69,57 +67,3 @@ def open_AHI_channel_guide(channel):
     return None
 
 
-def open_AHI_L2_product_guide(product):
-    """Open AHI QuickGuide of L2 products.
-
-    See `himawari_api.available_product(sensors="AHI", product_level="L2")` for available AHI L2 products.
-    Source of information: http://cimss.ssec.wisc.edu/goes/OCLOFactSheetPDFs/
-    """
-    import webbrowser
-    # TODO: TO UPDATE THE KEY WITH THE ACRONYM OF HIMAWARI PRODUCTS (AND DISCARD THE REST)
-    dict_product_fname = {
-        "ACHA": "ABIQuickGuide_BaselineCloudTopHeight.pdf",
-        "ACHT": "ABIQuickGuide_BaselineCloudTopTemperature.pdf",
-        "ACM": "ABIQuickGuide_BaselineClearSkyMask.pdf",
-        "ACTP": "ABIQuickGuide_BaselineCloudPhase.pdf",
-        "ADP": "ABIQuickGuide_BaselineAerosolDetection.pdf",
-        "AICE": "JPSSQuickGuide_Ice_Concentration_2022.pdf",
-        # "AITA": "Ice Thickness and Age",  # only F
-        "AOD": "ABIQuickGuide_BaselineAerosolOpticalDepth.pdf",
-        # "BRF": "Land Surface Bidirectional Reflectance Factor",
-        # "CMIP": "Cloud and Moisture Imagery",
-        "COD": "ABIQuickGuide_BaselineCloudOpticalDepth.pdf",
-        "CPS": "ABIQuickGuide_BaselineCloudParticleSizeDistribution.pdf	",
-        "CTP": "ABIQuickGuide_BaselineCloudTopPressure.pdf",
-        "DMW": "ABIQuickGuide_BaselineDerivedMotionWinds.pdf",
-        "DMWV": "ABIQuickGuide_BaselineDerivedMotionWinds.pdf",
-        "DSI": "ABIQuickGuide_BaselineDerivedStabilityIndices.pdf",
-        # "DSR": "Downward Shortwave Radiation",
-        "FDC": "QuickGuide_GOESR_FireHotSpot_v2.pdf",
-        # "LSA": "Land Surface Albedo",
-        "LST": "QuickGuide_GOESR_LandSurfaceTemperature.pdf",
-        "LST2KM": "QuickGuide_GOESR_LandSurfaceTemperature.pdf",
-        # "LVMP": "Legacy Vertical Moisture Profile",
-        # "LVTP": "Legacy Vertical Temperature Profile",
-        # "MCMIP": "Cloud and Moisture Imagery (Multi-band format)",
-        # "RRQPE": "Rainfall Rate (QPE)",
-        # "RSR": "Reflected Shortwave Radiation at TOA",
-        # "SST": "Sea Surface (Skin) Temperature",
-        # "TPW": "Total Precipitable Water",
-        "VAA": "QuickGuide_GOESR_VolcanicAsh.pdf",
-    }
-    available_products = list(dict_product_fname.keys())
-    # Check product
-    if not isinstance(product, str):
-        raise TypeError("Expecting a string defining a single AHI L2 product.")
-    product = _check_product(product=product, sensor="AHI", product_level="L2")
-    # Check QuickGuide availability
-    fname = dict_product_fname.get(product, None)
-    if fname is None:
-        raise ValueError(f"No AHI QuickGuide available for product '{product}' .\n" +
-                         f"Documentation is available for the following L2 products {available_products}.")
-    # Define url and open quickquide
-    url = f"http://cimss.ssec.wisc.edu/goes/OCLOFactSheetPDFs/{fname}"
-    webbrowser.open(url, new=1)
-
-    return None
