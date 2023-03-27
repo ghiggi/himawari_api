@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "himawari_api"
-description = "Python API for download and search Himawari satellite data on local and cloud storage."
+description = "Python API for downloading and searching Himawari satellite data on local and cloud storage."
 readme = "README.md"
 authors = [
 	{ name = "Gionata Ghiggi", email = "gionata.ghiggi@epfl.ch" },
