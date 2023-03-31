@@ -1,5 +1,5 @@
-# # Welcome to HIMAWARI API - An API to download and search HIMAWARI satellite data.
-[![DOI](https://zenodo.org/badge/286664485.svg)](https://zenodo.org/badge/latestdoi/XXXX)
+# Welcome to HIMAWARI API - An API to download and search HIMAWARI satellite data.
+[![DOI](https://zenodo.org/badge/538957326.svg)](https://zenodo.org/badge/latestdoi/538957326)
 [![PyPI version](https://badge.fury.io/py/himawari_api.svg)](https://badge.fury.io/py/himawari_api)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/himawari_api.svg)](https://anaconda.org/conda-forge/goes_api)
 [![Build Status](https://github.com/ghiggi/himawari_api/workflows/Continuous%20Integration/badge.svg?branch=main)](https://github.com/ghiggi/himawari_api/actions)
@@ -45,9 +45,9 @@ Then, install the HIMAWARI-API package by typing the following command in the co
 
 If you are using HIMAWARI-API, please cite:
 
-> Ghiggi Gionata. ghiggi/himawari_api. Zenodo. https://doi.org/10.5281/zenodo.7787851
+> Ghiggi Gionata. ghiggi/himawari_api. Zenodo. https://doi.org/10.5281/zenodo.7787923
 
-If you want to cite a specific version, have a look at the [Zenodo site](https://doi.org/10.5281/zenodo.7787851).
+If you want to cite a specific version, have a look at the [Zenodo site](https://doi.org/10.5281/zenodo.7787923).
 
 ## Contributors
 
