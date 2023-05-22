@@ -495,6 +495,7 @@ def find_latest_files(
     N = 1, 
     check_consistency=True, 
     look_ahead_minutes=30,
+    return_list=False,
 ):
     """
     Retrieve latest available files.
@@ -550,27 +551,20 @@ def find_latest_files(
         See `himawari_api.available_connection_types` for implemented solutions.
 
     """
-    import time
     # Get closest time
-    for i in range(10):
-        try:
-            latest_time = find_latest_start_time(
-                look_ahead_minutes=look_ahead_minutes, 
-                base_dir=base_dir,
-                protocol=protocol,
-                fs_args=fs_args,
-                satellite=satellite,
-                product_level=product_level,
-                product=product,
-                sector=sector,
-                filter_parameters=filter_parameters,
-            )
-            break
-        except: 
-            time.sleep(1)
-            if i == 9:
-                raise ValueError("Impossible to retrieve last timestep available.")
-
+    latest_time = find_latest_start_time(
+        look_ahead_minutes=look_ahead_minutes, 
+        base_dir=base_dir,
+        protocol=protocol,
+        fs_args=fs_args,
+        satellite=satellite,
+        product_level=product_level,
+        product=product,
+        sector=sector,
+        filter_parameters=filter_parameters,
+    )
+    
+    # Retrieve previous files 
     fpath_dict = find_previous_files(
         N = N, 
         check_consistency=check_consistency,
@@ -585,6 +579,7 @@ def find_latest_files(
         sector=sector,
         filter_parameters=filter_parameters,
         connection_type=connection_type,
+        return_list=return_list,
     )
     return fpath_dict
 
@@ -603,6 +598,7 @@ def find_previous_files(
     fs_args={},
     include_start_time=False,
     check_consistency=True,
+    return_list=False,
 ):
     """
     Find files for N timesteps previous to start_time.
@@ -731,7 +727,10 @@ def find_previous_files(
         _check_interval_regularity(list_datetime)
 
     # ----------------------------------------------------------
-    # Return files dictionary
+    # If return_list=True, return list of filepaths (instead of a dictionary)
+    if return_list: 
+        fpaths = list(fpath_dict.values())[0]
+        return fpaths
     return fpath_dict
 
 
@@ -749,6 +748,7 @@ def find_next_files(
     fs_args={},
     include_start_time=False,
     check_consistency=True,
+    return_list=False,
 ):
     """
     Find files for N timesteps after start_time.
@@ -876,7 +876,9 @@ def find_next_files(
         _check_interval_regularity(list_datetime)
 
     # ----------------------------------------------------------
-    # Return files dictionary
+    # If return_list=True, return list of filepaths (instead of a dictionary)
+    if return_list: 
+        fpaths = list(fpath_dict.values())[0]
+        return fpaths
     return fpath_dict
-
 

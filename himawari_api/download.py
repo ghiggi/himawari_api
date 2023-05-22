@@ -536,6 +536,7 @@ def download_latest_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    return_list=False,
 ):
     """
     Download latest available files from a cloud bucket storage.
@@ -631,6 +632,7 @@ def download_latest_files(
         force_download=force_download,
         check_data_integrity=check_data_integrity,
         verbose=verbose,
+        return_list=return_list,
     )
     return fpaths
 
@@ -653,9 +655,10 @@ def download_previous_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    return_list=False,
 ):
     """
-    Donwload files for N timesteps previous to start_time.
+    Download files for N timesteps previous to start_time.
 
     Parameters
     ----------
@@ -759,9 +762,10 @@ def download_previous_files(
         check_data_integrity=check_data_integrity,
         verbose=verbose,
     )
-    # Group files by start_time
-    fpaths_dict = group_files(fpaths, key="start_time")
-    return fpaths_dict
+    # If return_list=False, group files by start_time
+    if not return_list:
+        fpaths = group_files(fpaths, key="start_time")
+    return fpaths
 
 
 def download_next_files(
@@ -782,9 +786,10 @@ def download_next_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    return_list=False
 ):
     """
-    Donwload files for N timesteps after start_time.
+    Download files for N timesteps after start_time.
 
     Parameters
     ----------
@@ -887,6 +892,7 @@ def download_next_files(
         check_data_integrity=check_data_integrity,
         verbose=verbose,
     )
-    # Group files by start_time
-    fpaths_dict = group_files(fpaths, key="start_time")
-    return fpaths_dict
+    # If return_list=False, group files by start_time
+    if not return_list:
+        fpaths = group_files(fpaths, key="start_time")
+    return fpaths
